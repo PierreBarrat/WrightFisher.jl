@@ -22,8 +22,8 @@ function expiring_fitness(x::Genotype, pop::Pop)
 	return f
 end
 function expiring_fitness(xi::Integer, i::Integer, pop::Pop)
-	if sign(xi) == pop.H[i]
-		return pop.H[i] * exp(- pop.param.α*pop.integrated_freq[i])
+	if sign(xi) == sign(pop.H[i])
+		return abs(pop.H[i]) * exp(- pop.param.α*pop.integrated_freq[i])
 	else
 		return 0.
 	end

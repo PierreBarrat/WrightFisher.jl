@@ -1,5 +1,5 @@
 """
-	init(; N = 100, L = 10, μ = 0.1/L, s = 0.0)
+	init(; N = 100, L = 10, μ = 0.1/L, s = 0.0, α = 0.)
 """
 function init(; N = 100, L = 10, μ = 0.1/L, s = 0.0, α = 0.)
 	return init(N, L, μ, s, α)
@@ -10,7 +10,7 @@ function init(N, L, μ, s, α)
 	pop = Pop(
 		Dict(x.id => x),
 		Dict(x.id => N),
-		s/2 * ones(L),
+		s * ones(L),
 		zeros(Float64, L),
 		N,
 		param
@@ -19,23 +19,21 @@ function init(N, L, μ, s, α)
 end
 
 function mutate(x::Genotype, nmut, rng)
-	# pos = unique!(rand(1:length(x), nmut))
 	s = copy(x.seq)
 	for n in 1:nmut
 		i = rand(rng, 1:length(x))
 		s[i] = -s[i]
 	end
+
 	return Genotype(s, hash(s))
 end
 
 function mutate!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 	λ = pop.param.μ * pop.param.L
-	# P = Poisson(λ)
 	Z = 0
 	ids = collect(keys(pop.genotypes))
 	for id in ids
 		x = pop.genotypes[id]
-		# nmut = rand(P, round(Int, pop.counts[id]))
 		z = 0
 		for i in 1:pop.counts[id]
 			nm = pois_rand(rng, λ)
@@ -48,6 +46,7 @@ function mutate!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 		remove!(pop, x, z)
 		Z += z
 	end
+
 	return Z
 end
 
@@ -58,21 +57,12 @@ function select!(pop::Pop, fitness = additive_fitness)
 	for (id, x) in pop.genotypes
 		pop.counts[id] *= 1+fitness(x, pop)
 	end
+
 	return nothing
 end
 
 
 function sample!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
-	# w = Weights(collect(values(pop.counts)))
-	# ids = collect(keys(pop.counts))
-	# # Sampling
-	# StatsBase.sample!(rng, ids, w, newids)
-	# for id in keys(pop.counts)
-	# 	pop.counts[id] = 0.
-	# end
-	# for id in newids
-	# 	pop.counts[id] += 1.
-	# end
 	for (id, cnt) in pop.counts
 		pop.counts[id] = pois_rand(rng, cnt)
 	end
@@ -81,6 +71,7 @@ function sample!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 			delete!(pop, x)
 		end
 	end
+
 	return pop
 end
 
@@ -93,6 +84,7 @@ function normalize!(pop::Pop)
 	for (id, cnt) in pop.counts
 		pop.counts[id] = pop.counts[id] / N
 	end
+
 	return N
 end
 

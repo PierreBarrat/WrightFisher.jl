@@ -70,16 +70,3 @@ function remove!(pop::Pop, x::Genotype, i)
 	return pop
 end
 
-
-abstract type FitnessLandscape end
-
-mutable struct AdditiveFitness <: FitnessLandscape
-	H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
-	s::Float64 # overall magnitude
-end
-
-mutable struct ExpiringFitness <: FitnessLandscape
-	H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
-	s::Float64 # overall magnitude
-	α::Float64 # rate of decay of fitness
-end

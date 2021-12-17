@@ -13,7 +13,7 @@ export SEF, ST
 
 include("objects.jl")
 include("fitness.jl")
-include("evolve_methods.jl")
+include("evolve.jl")
 include("pop_methods.jl")
 include("misc.jl")
 

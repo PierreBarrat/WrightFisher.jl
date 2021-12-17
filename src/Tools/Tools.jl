@@ -44,9 +44,11 @@ function evolve_sample_freqs!(
 end
 
 """
-	function evolve_sample_freqs(
+	evolve_sample_freqs(
 		evtime, Δt;
-		N = 100, L = 10, μ = 0.1/L, s = 0.0, fitness = SEF.additive_fitness
+		N = 100, L = 10, μ = 0.1/L, s = 0.0, α = 0.,
+		fitness = SEF.additive_fitness,
+		switchgen = Inf,
 	)
 
 Evolve a population for `evtime` generations and sample its frequencies every `Δt`.
