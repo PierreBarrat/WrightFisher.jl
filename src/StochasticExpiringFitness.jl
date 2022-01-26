@@ -1,15 +1,18 @@
 module StochasticExpiringFitness
 
-# using Distributions
-using RandomNumbers
+using LinearAlgebra
 using PoissonRandom
+using RandomNumbers
 using StatsBase
 
 import Base: ==
 import Base: hash, length, push!, in, delete!, show
 
 const SEF = StochasticExpiringFitness
-export SEF, ST
+export SEF
+
+export Pop, FitnessLandscape
+export init_fitness_landscape
 
 include("objects.jl")
 include("fitness.jl")

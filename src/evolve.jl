@@ -1,23 +1,3 @@
-"""
-	init(; N = 100, L = 10, μ = 0.1/L, s = 0.0, α = 0.)
-"""
-function init(; N = 100, L = 10, μ = 0.1/L, s = 0.0, α = 0.)
-	return init(N, L, μ, s, α)
-end
-function init(N, L, μ, s, α)
-	param = PopParam(N, L, μ, s, α)
-	x = Genotype(L)
-	pop = Pop(
-		Dict(x.id => x),
-		Dict(x.id => N),
-		s * ones(L),
-		zeros(Float64, L),
-		N,
-		param
-	)
-	return pop
-end
-
 function mutate(x::Genotype, nmut, rng)
 	s = copy(x.seq)
 	for n in 1:nmut
@@ -34,8 +14,11 @@ function mutate!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 	ids = collect(keys(pop.genotypes))
 	for id in ids
 		x = pop.genotypes[id]
+		C = Int(floor(pop.counts[id]))
 		z = 0
-		for i in 1:pop.counts[id]
+		i = 1
+		# while i < C
+		for i in 1:C
 			nm = pois_rand(rng, λ)
 			if nm > 0
 				y = mutate(x, nm, rng)
@@ -50,12 +33,17 @@ function mutate!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 	return Z
 end
 
-function select!(pop::Pop, fitness = additive_fitness)
-	if fitness == expiring_fitness
-		sum_frequencies!(pop)
-	end
+function select!(pop::Pop)
 	for (id, x) in pop.genotypes
-		pop.counts[id] *= 1+fitness(x, pop)
+		pop.counts[id] *= 1+fitness(x, pop.fitness)
+	end
+
+	return nothing
+end
+function select!(pop::Pop{ExpiringFitness})
+	sum_frequencies!(pop)
+	for (id, x) in pop.genotypes
+		pop.counts[id] *= 1+fitness(x, pop.fitness)
 	end
 
 	return nothing
@@ -88,12 +76,16 @@ function normalize!(pop::Pop)
 	return N
 end
 
-function evolve!(pop::Pop, n=1; fitness = additive_fitness)
-	# ids_array = Vector{UInt}(undef, pop.param.N)
+"""
+	evolve!(pop::Pop, n=1)
+
+Evolve `pop` for `n` generations.
+"""
+function evolve!(pop::Pop, n=1)
 	rng = Xorshifts.Xoroshiro128Plus()
 	for i in 1:n
 		mutate!(pop, rng)
-		select!(pop, fitness)
+		select!(pop)
 		sample!(pop, rng)
 		normalize!(pop)
 	end

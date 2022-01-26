@@ -1,30 +1,59 @@
-function additive_fitness(x::Genotype, pop::Pop)
+fitness(x::Genotype, pop::Pop) = fitness(x::Genotype, pop.fitness)
+
+function fitness(xi::Integer, i::Integer, ϕ::AdditiveFitness)
+	if xi > 0 && ϕ.H[i] > 0. || xi < 0 && ϕ.H[i] < 0.
+		return abs(ϕ.H[i])
+	else
+		return 0.
+	end
+end
+function fitness(x::Genotype, ϕ::AdditiveFitness)
+	@assert length(x) == ϕ.L "Genotype $(length(x)) and fitness landscape $(ϕ.L) \
+	must have the same length"
 	f = 0
 	for (i, xi) in enumerate(x.seq)
-		f += additive_fitness(xi, i, pop)
+		f += fitness(xi, i, ϕ)
 	end
 	return f
 end
-function additive_fitness(xi::Integer, i::Integer, pop)
-	if sign(xi) == sign(pop.H[i])
-		return abs(pop.H[i])
+
+function fitness(x::Genotype, ϕ::ExpiringFitness)
+	@assert length(x) == ϕ.L "Genotype $(length(x)) and fitness landscape $(ϕ.L) \
+	must have the same length"
+	f = 0
+	for (i, xi) in enumerate(x.seq)
+		f += fitness(xi, i, ϕ)
+	end
+	return f
+end
+function fitness(xi::Integer, i::Integer, ϕ::ExpiringFitness)
+	if xi > 0 && ϕ.H[i] > 0. || xi < 0 && ϕ.H[i] < 0.
+		return abs(ϕ.H[i]) * exp(-ϕ.α * ϕ.integrated_freq[i])
 	else
 		return 0.
 	end
 end
 
 
-function expiring_fitness(x::Genotype, pop::Pop)
-	f = 0
-	for (i, xi) in enumerate(x.seq)
-		f += expiring_fitness(xi, i, pop)
+function fitness(x::Genotype, ϕ::PairwiseFitness)
+	@assert length(x) == ϕ.L "Genotype $(length(x)) and fitness landscape $(ϕ.L) \
+	must have the same length"
+	f = 0.
+	for j in 1:length(x.seq)
+		if x.seq[j] > 0 && ϕ.H[j] > 0. || x.seq[j] < 0 && ϕ.H[j] < 0.
+			f += abs(ϕ.H[j])
+		end
+		for i in (j+1):length(x.seq)
+			# J[i,j] > 0 favors same state
+			# J[i,j] < 0 favors different states
+			if x.seq[i] == x.seq[j] && ϕ.J[i,j] > 0
+				f += ϕ.J[i,j]
+			elseif x.seq[i] != x.seq[j] && ϕ.J[i,j] < 0
+				f -= ϕ.J[i,j]
+			end
+		end
 	end
+
 	return f
 end
-function expiring_fitness(xi::Integer, i::Integer, pop::Pop)
-	if sign(xi) == sign(pop.H[i])
-		return abs(pop.H[i]) * exp(- pop.param.α*pop.integrated_freq[i])
-	else
-		return 0.
-	end
-end
+
