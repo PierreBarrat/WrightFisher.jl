@@ -1,11 +1,4 @@
-name = "StochasticExpiringFitness"
-uuid = "1d537304-9395-4c62-95b2-b585d20a406e"
+name = "WrightFisher"
+uuid = "28f02b08-ea27-4491-b13a-74513855a8ed"
 authors = ["PierreBarrat <p.barrat@live.fr>"]
 version = "0.1.0"
-
-[deps]
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-PoissonRandom = "e409e4f3-bfea-5376-8464-e040bb5c01ab"
-RandomNumbers = "e6cf234a-135c-5ec9-84dd-332b85af5143"
-StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"

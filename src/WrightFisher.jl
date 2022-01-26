@@ -1,4 +1,4 @@
-module StochasticExpiringFitness
+module WrightFisher
 
 using LinearAlgebra
 using PoissonRandom
@@ -8,8 +8,8 @@ using StatsBase
 import Base: ==
 import Base: hash, length, push!, in, delete!, show
 
-const SEF = StochasticExpiringFitness
-export SEF
+const WF = WrightFisher
+export WF
 
 export Pop, FitnessLandscape
 export init_fitness_landscape
