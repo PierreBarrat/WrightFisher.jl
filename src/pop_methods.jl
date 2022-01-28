@@ -1,3 +1,7 @@
+######################################################################
+############################# STATISTICS #############################
+######################################################################
+
 """
 	frequencies(pop::Pop)
 	f1(pop::Pop)
@@ -9,28 +13,46 @@ function frequencies(pop::Pop)
 	for (id, x) in pop.genotypes
 		# f1 .+= x.seq * pop.counts[id]
 		for (i,s) in enumerate(x.seq)
-			f1[2*(i-1) + 1] += s * pop.counts[id]
+			if s > 0
+				f1[2*(i-1) + 1] += pop.counts[id]
+			elseif s < 0
+				f1[2*(i-1) + 2] += pop.counts[id]
+			end
 		end
 	end
-	f1 .= (f1 / pop.N) / 2 .+ 0.5
-	# Adding state -1
-	for i in 1:(Int(length(f1)/2))
-		f1[2*i] = 1 - f1[2*i - 1]
-	end
-
+	# f1 .= (f1 / pop.N) / 2 .+ 0.5
+	# # Adding state -1
+	# for i in 1:(Int(length(f1)/2))
+	# 	f1[2*i] = 1 - f1[2*i - 1]
+	# end
+	f1 ./= pop.N
 	return f1
 end
 f1(pop::Pop) = frequencies(pop)
-
-function fields(pop::Pop)
-	fitness = zeros(Float64, 2 * pop.param.L)
-	fitness[1:2:end] .= pop.fitness.H
-	for i in 1:Int(length(fitness)/2)
-		ϕ = fitness[2*i - 1]
-		fitness[2*i] = -ϕ
+function f2(pop::Pop)
+	f2 = zeros(Float64, 2 * pop.param.L, 2 * pop.param.L)
+	for (id, x) in pop.genotypes
+		for i in 1:length(x.seq), j in i:length(x.seq)
+			if x.seq[i] > 0 && x.seq[j] > 0
+				f2[2*(i-1) + 1, 2*(j-1) + 1] += pop.counts[id]
+			elseif x.seq[i] > 0 && x.seq[j] < 0
+				f2[2*(i-1) + 1, 2*(j-1) + 2] += pop.counts[id]
+			elseif x.seq[i] < 0 && x.seq[j] > 0
+				f2[2*(i-1) + 2, 2*(j-1) + 1] += pop.counts[id]
+			elseif x.seq[i] < 0 && x.seq[j] < 0
+				f2[2*(i-1) + 2, 2*(j-1) + 2] += pop.counts[id]
+			end
+		end
+	end
+	# Making it symmetric
+	for i in 1:pop.param.L, j in (i+1):pop.param.L
+		for a in 1:2, b in 1:2
+			f2[2*(j-1)+b, 2*(i-1)+a] = f2[2*(i-1)+a, 2*(j-1)+b]
+		end
 	end
 
-	return fitness
+	f2 ./= pop.N
+	return f2
 end
 
 """
@@ -65,6 +87,35 @@ function get_summed_frequencies(pop::Pop{ExpiringFitness})
 
 	return SF
 end
+
+######################################################################
+############################### FITNESS ##############################
+######################################################################
+
+function fields(pop::Pop)
+	H = zeros(Float64, 2 * pop.param.L)
+	H[1:2:end] .= pop.fitness.H
+	for i in 1:Int(length(fitness)/2)
+		ϕ = H[2*i - 1]
+		H[2*i] = -ϕ
+	end
+
+	return H
+end
+function couplings(pop::Pop{PairwiseFitness})
+	J = zeros(Float64, 2*pop.param.L, 2*pop.param.L)
+	for i in 1:pop.param.L, for j in (i+1):pop.param.L
+		J[2*(i-1) + 1, 2*(j-1) + 1] = pop.fitness.J[i,j]
+		J[2*(i-1) + 2, 2*(j-1) + 2] = pop.fitness.J[i,j]
+		J[2*(i-1) + 1, 2*(j-1) + 2] = -pop.fitness.J[i,j]
+		J[2*(i-1) + 2, 2*(j-1) + 1] = -pop.fitness.J[i,j]
+	end
+	J .= J + J'
+
+	return J
+end
+
+
 
 function get_fitness_vector(pop)
 	ϕ = zeros(Float64, 2 * pop.param.L)
