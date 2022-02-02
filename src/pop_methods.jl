@@ -92,9 +92,10 @@ end
 ############################### FITNESS ##############################
 ######################################################################
 
-function fields(pop::Pop)
-	H = zeros(Float64, 2 * pop.param.L)
-	H[1:2:end] .= pop.fitness.H
+fields(pop::Pop) = fields(pop.fitness)
+function fields(ϕ::FitnessLandscape)
+	H = zeros(Float64, 2 * ϕ.L)
+	H[1:2:end] .= ϕ.H
 	for i in 1:Int(length(fitness)/2)
 		ϕ = H[2*i - 1]
 		H[2*i] = -ϕ
@@ -102,15 +103,17 @@ function fields(pop::Pop)
 
 	return H
 end
-function couplings(pop::Pop{PairwiseFitness})
-	J = zeros(Float64, 2*pop.param.L, 2*pop.param.L)
-	for i in 1:pop.param.L, for j in (i+1):pop.param.L
-		J[2*(i-1) + 1, 2*(j-1) + 1] = pop.fitness.J[i,j]
-		J[2*(i-1) + 2, 2*(j-1) + 2] = pop.fitness.J[i,j]
-		J[2*(i-1) + 1, 2*(j-1) + 2] = -pop.fitness.J[i,j]
-		J[2*(i-1) + 2, 2*(j-1) + 1] = -pop.fitness.J[i,j]
+
+couplings(pop::Pop{PairwiseFitness}) = couplings(pop.fitness)
+function couplings(ϕ::PairwiseFitness)
+	J = zeros(Float64, 2*ϕ.L, 2*ϕ.L)
+	for i in 1:ϕ.L, j in (i+1):ϕ.L
+		J[2*(i-1) + 1, 2*(j-1) + 1] = ϕ.J[i,j]
+		J[2*(i-1) + 2, 2*(j-1) + 2] = ϕ.J[i,j]
+		J[2*(i-1) + 1, 2*(j-1) + 2] = -ϕ.J[i,j]
+		J[2*(i-1) + 2, 2*(j-1) + 1] = -ϕ.J[i,j]
 	end
-	J .= J + J'
+	J .= J .+ J'
 
 	return J
 end
