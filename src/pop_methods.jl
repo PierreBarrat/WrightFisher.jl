@@ -97,8 +97,8 @@ function fields(ϕ::FitnessLandscape)
 	H = zeros(Float64, 2 * ϕ.L)
 	H[1:2:end] .= ϕ.H
 	for i in 1:Int(length(fitness)/2)
-		ϕ = H[2*i - 1]
-		H[2*i] = -ϕ
+		f = H[2*i - 1]
+		H[2*i] = -f
 	end
 
 	return H
