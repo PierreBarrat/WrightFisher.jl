@@ -31,14 +31,19 @@ const fitness_landscape_types = (:additive, :expiring, :pairwise)
 
 mutable struct AdditiveFitness <: FitnessLandscape
 	L::Int
-	H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
+	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
 	s::Float64 # overall magnitude
 end
+"""
+	AdditiveFitness(s::Number, L::Int)
+
+Create an `AdditiveFitness` landscape with positive fields of magnitude `s`.
+"""
 AdditiveFitness(s::Number, L::Int) = AdditiveFitness(L, s * ones(L), s)
 
 mutable struct ExpiringFitness <: FitnessLandscape
 	L::Int
-	H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
+	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
 	integrated_freq::Vector{Float64} # Summed frequency of the state favored by H
 	s::Float64 # overall magnitude
 	α::Float64 # rate of decay of fitness
@@ -63,8 +68,8 @@ end
 
 mutable struct PairwiseFitness <: FitnessLandscape
 	L::Int
-	H::Vector{Float64}
-	J::Matrix{Float64}
+	H::Vector{Float32}
+	J::Matrix{Float32}
 	s::Float64
 	function PairwiseFitness(L, H, J, s)
 		@assert issymmetric(J) "Coupling matrix must be symmetric."
@@ -124,6 +129,7 @@ Initialize a population.
 - `fitness_type`: Implemented `fitness_landscape_types`.
 - `s`: overall magnitude of fitness effects
 - `α`: fitness decay rate for `:expiring` fitness type.
+- `init`: `:ones` or `:rand`
 """
 function Pop(;
 	N = 100,
