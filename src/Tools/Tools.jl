@@ -3,10 +3,13 @@ module Tools
 using WrightFisher
 using StatsBase
 
+export evolve_sample_freqs, evolve_sample_freqs!, evolve_sample_pop!
+
+
 """
 	evolve_sample_freqs(
 		pop, evtime, Δt;
-		N = 100, L = 10, μ = 0.1/L, s = 0.0, fitness = WF.additive_fitness
+		switchgen = Inf,
 	)
 
 Evolve `pop` for `evtime` generations and sample its frequencies every `Δt`.
@@ -63,7 +66,33 @@ function evolve_sample_freqs(
 	return evolve_sample_freqs!(pop, evtime, Δt; switchgen)
 end
 
+"""
+	evolve_sample_pop!(pop, evtime, Δt, n; burnin = 0)
 
+Evolve `pop` for `evtime` generations and sample `n` genomes every `Δt`.
+"""
+function evolve_sample_pop!(pop, evtime, Δt, n; burnin = 0, format = :onehot)
+	nsamples = Int(ceil(evtime / Δt))
+	aln = if format == :onehot
+		zeros(Int, nsamples*n, 2*pop.param.L)
+	else
+		zeros(Int, nsamples*n, pop.param.L)
+	end
+	# Initial evolution
+	WF.evolve!(pop, burnin)
+	# Evolution
+	t = 0
+	it = 0
+	while t < evtime
+		WF.evolve!(pop, Δt)
+		X = WF.sample(pop, n; format)
+		aln[(it*n + 1):((it+1)*n), :] .= X
+		t += Δt
+		it += 1
+	end
+
+	return aln
+end
 
 
 

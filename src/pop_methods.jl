@@ -141,3 +141,67 @@ function change_random_field!(pop::Pop{ExpiringFitness})
 	pop.fitness.integrated_freq[i] = 0.
 	return i, pop.fitness.H[i]
 end
+
+######################################################################
+############################### SAMPLE ###############################
+######################################################################
+
+function one_hot(X::Genotype)
+	s = zeros(Int8, 2*length(X))
+	for (i, x) in enumerate(X.seq)
+		if x > 0
+			s[2*(i-1) + 1] = 1
+		else
+			s[2*(i-1) + 2] = 1
+		end
+	end
+	return s
+end
+
+"""
+	sample(
+		pop::Pop, n::Int;
+		rng = Xorshifts.Xoroshiro128Plus(), format = :onehot,
+	)
+
+Sample `n` genotypes from `pop`.
+"""
+function sample(
+	pop::Pop, n::Int;
+	rng = Xorshifts.Xoroshiro128Plus(), format = :onehot,
+)
+	if format == :onehot
+		return sample_onehot(pop, n; rng)
+	elseif format == :spin
+		return sample_qstate(pop, n; rng)
+	elseif format == :qstates
+		return Int.(-sample_qstate(pop, n; rng)/2 .+ 1.5)
+	end
+end
+
+function sample_qstate(pop::Pop, n::Int; rng = Xorshifts.Xoroshiro128Plus())
+	aln = zeros(Int8, n, pop.param.L)
+	ids = StatsBase.sample(
+		collect(keys(pop.counts)),
+		weights(collect(values(pop.counts))),
+		n
+	)
+	for (i,id) in enumerate(ids)
+		aln[i,:] .= pop.genotypes[id].seq
+	end
+
+	return aln
+end
+function sample_onehot(pop::Pop, n::Int; rng = Xorshifts.Xoroshiro128Plus())
+	aln = zeros(Int8, n, 2*pop.param.L)
+	ids = StatsBase.sample(
+		collect(keys(pop.counts)),
+		weights(collect(values(pop.counts))),
+		n
+	)
+	for (i,id) in enumerate(ids)
+		aln[i,:] .= one_hot(pop.genotypes[id])
+	end
+
+	return aln
+end
