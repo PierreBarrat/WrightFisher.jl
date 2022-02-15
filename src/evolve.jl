@@ -17,7 +17,6 @@ function mutate!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 		C = Int(floor(pop.counts[id]))
 		z = 0
 		i = 1
-		# while i < C
 		for i in 1:C
 			nm = pois_rand(rng, λ)
 			if nm > 0
@@ -34,7 +33,7 @@ function mutate!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 end
 
 function select!(pop::Pop)
-	for (id, x) in pop.genotypes
+	for (id, x) in pairs(pop.genotypes)
 		pop.counts[id] *= 1+fitness(x, pop.fitness)
 	end
 
@@ -42,7 +41,7 @@ function select!(pop::Pop)
 end
 function select!(pop::Pop{ExpiringFitness})
 	sum_frequencies!(pop)
-	for (id, x) in pop.genotypes
+	for (id, x) in pairs(pop.genotypes)
 		pop.counts[id] *= 1+fitness(x, pop.fitness)
 	end
 
@@ -51,10 +50,10 @@ end
 
 
 function sample!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
-	for (id, cnt) in pop.counts
+	for (id, cnt) in pairs(pop.counts)
 		pop.counts[id] = pois_rand(rng, cnt)
 	end
-	for (id,x) in pop.genotypes
+	for (id,x) in pairs(pop.genotypes)
 		if pop.counts[id] == 0.
 			delete!(pop, x)
 		end
@@ -65,11 +64,11 @@ end
 
 function normalize!(pop::Pop)
 	N = 0
-	for cnt in values(pop.counts)
+	for cnt in pop.counts
 		N += cnt
 	end
 	N /= pop.param.N
-	for (id, cnt) in pop.counts
+	for (id, cnt) in pairs(pop.counts)
 		pop.counts[id] = pop.counts[id] / N
 	end
 

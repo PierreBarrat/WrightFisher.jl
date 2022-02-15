@@ -53,6 +53,12 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
+[[deps.Dictionaries]]
+deps = ["Indexing", "Random"]
+git-tree-sha1 = "63004a55faf43a5f7be7f5eca36ce355e9a75b2c"
+uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
+version = "0.3.18"
+
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -66,6 +72,11 @@ version = "0.8.6"
 [[deps.Downloads]]
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+
+[[deps.Indexing]]
+git-tree-sha1 = "ce1566720fd6b19ff3411404d4b977acd4814f9f"
+uuid = "313cdc1a-70c2-5d6a-ae34-0150d3930a38"
+version = "1.1.1"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
