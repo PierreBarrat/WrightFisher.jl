@@ -1,5 +1,6 @@
 module WrightFisher
 
+using Dictionaries
 using LinearAlgebra
 using PoissonRandom
 using RandomNumbers

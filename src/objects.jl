@@ -104,8 +104,8 @@ struct PopParam
 end
 
 mutable struct Pop{F<:FitnessLandscape}
-	genotypes::Dict{UInt, Genotype}
-	counts::Dict{UInt, Float64}
+	genotypes::Dictionary{UInt, Genotype}
+	counts::Dictionary{UInt, Float64}
 	N::Float64 # real pop size (can vary)
 	fitness::F
 	param::PopParam
@@ -169,15 +169,21 @@ end
 function ones_pop(fitness, param)
 	x = Genotype(param.L)
 	return Pop(
-		Dict(x.id => x), # genotypes
-		Dict(x.id => Float64(param.N)), # counts
+		Dictionary([x.id], [x]), # genotypes
+		Dictionary([x.id], [Float64(param.N)]), # counts
 		Float64(param.N),
 		fitness, # fitness landscape
 		param
 	)
 end
 function random_pop(fitness, param)
-	pop = Pop(Dict{UInt64, WrightFisher.Genotype}(), Dict{UInt64, Float64}(), Float64(param.N), fitness, param)
+	pop = Pop(
+		Dictionary{UInt64, WrightFisher.Genotype}(),
+		Dictionary{UInt64, Float64}(),
+		Float64(param.N),
+		fitness,
+		param
+	)
 	for n in 1:param.N
 		push!(pop, Genotype(rand([-1,1], param.L)))
 	end
@@ -191,8 +197,8 @@ function Base.push!(pop::Pop, x::Genotype, n=1.)
 	if in(x, pop)
 		pop.counts[x.id] += n
 	else
-		pop.genotypes[x.id] = x
-		pop.counts[x.id] = n
+		insert!(pop.genotypes, x.id, x)
+		insert!(pop.counts, x.id, n)
 	end
 	return pop
 end
