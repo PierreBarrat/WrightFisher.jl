@@ -96,7 +96,7 @@ fields(pop::Pop) = fields(pop.fitness)
 function fields(ϕ::FitnessLandscape)
 	H = zeros(Float64, 2 * ϕ.L)
 	H[1:2:end] .= ϕ.H
-	for i in 1:Int(length(fitness)/2)
+	for i in 1:Int(length(H)/2)
 		f = H[2*i - 1]
 		H[2*i] = -f
 	end
@@ -204,4 +204,22 @@ function sample_onehot(pop::Pop, n::Int; rng = Xorshifts.Xoroshiro128Plus())
 	end
 
 	return aln
+end
+
+
+######################################################################
+############################# DIVERSITY ##############################
+######################################################################
+
+"""
+	diversity(pop; α=1, method=:renyi_entropy)
+
+Only `:renyi_entropy` method is implemented.
+
+## Methods
+- `:renyi_entropy`: return the exponential of the Rényi entropy with parameter `α`.
+"""
+function diversity(pop; α=1, method=:renyi_entropy)
+	P = collect(pop.counts) / sum(pop.counts)
+	return exp(StatsBase.renyientropy(P, α))
 end
