@@ -29,6 +29,9 @@ abstract type FitnessLandscape end
 
 const fitness_landscape_types = (:additive, :expiring, :pairwise)
 
+"""
+	AdditiveFitness(L::Int, H::Vector{Float32}, s::Float64)
+"""
 mutable struct AdditiveFitness <: FitnessLandscape
 	L::Int
 	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
@@ -41,6 +44,21 @@ Create an `AdditiveFitness` landscape with positive fields of magnitude `s`.
 """
 AdditiveFitness(s::Number, L::Int) = AdditiveFitness(L, s * ones(L), s)
 
+"""
+# Summary
+```
+mutable struct WrightFisher.ExpiringFitness <: FitnessLandscape
+```
+
+# Fields
+```
+L::Int
+H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
+integrated_freq::Vector{Float64} # Summed frequency of the state favored by H
+s::Float64 # overall magnitude
+α::Float64 # rate of decay of fitness
+```
+"""
 mutable struct ExpiringFitness <: FitnessLandscape
 	L::Int
 	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
@@ -48,6 +66,9 @@ mutable struct ExpiringFitness <: FitnessLandscape
 	s::Float64 # overall magnitude
 	α::Float64 # rate of decay of fitness
 end
+"""
+	ExpiringFitness(s::Number, α::Number, L::Int)
+"""
 function ExpiringFitness(s::Number, α::Number, L::Int)
 	return ExpiringFitness(L, s*ones(L), zeros(Float64, L), s, α)
 end
