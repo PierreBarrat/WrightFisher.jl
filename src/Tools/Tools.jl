@@ -9,15 +9,18 @@ export evolve_sample_freqs, evolve_sample_freqs!, evolve_sample_pop!
 """
 	evolve_sample_freqs(
 		pop, evtime, Δt;
-		switchgen = Inf,
+		switchgen = Inf, kwargs...
 	)
 
-Evolve `pop` for `evtime` generations and sample its frequencies every `Δt`.
+Evolve `pop` for `evtime` generations and sample its frequencies every `Δt`. Extra keyword
+arguments `kwargs` are passed to `WF.change_random_field!`.
 """
 function evolve_sample_freqs!(
 	pop, evtime, Δt;
-	switchgen = Inf,
+	switchgen = Inf, change_init_field = true, kwargs...
 )
+	change_init_field && WF.change_random_field!(pop; kwargs...)
+
 	freqs = zeros(Float64, div(evtime, Δt) + 1, 2*pop.param.L)
 	freqs[1, :] .= WF.f1(pop)
 
@@ -38,7 +41,7 @@ function evolve_sample_freqs!(
 		t += Δt
 		i += 1
 		if mod(t, switchgen) == 0
-			WF.change_random_field!(pop)
+			i, h = WF.change_random_field!(pop; kwargs...)
 		end
 	end
 
@@ -69,7 +72,7 @@ end
 """
 	evolve_sample_pop!(pop, evtime, Δt, n; burnin = 0)
 
-Evolve `pop` for `evtime` generations and sample `n` genomes every `Δt`.
+Evolve `pop` for `evtime` generations and sample `n` genomes every `Δt` generations.
 """
 function evolve_sample_pop!(pop, evtime, Δt, n; burnin = 0, format = :onehot)
 	nsamples = Int(ceil(evtime / Δt))
@@ -93,6 +96,32 @@ function evolve_sample_pop!(pop, evtime, Δt, n; burnin = 0, format = :onehot)
 
 	return aln
 end
+
+"""
+	evolve_sample_pop!(pop, evtime, Δt; burnin = 0)
+
+Evolve `pop` for `evtime` generations and return a copy of `pop` every `Δt` generations.
+Yet untested version -- not sure whether this is useful
+"""
+function __evolve_sample_pop!(pop, evtime, Δt; burnin = 0, format = :onehot)
+	nsamples = Int(ceil(evtime / Δt))
+	popsample = Dict()
+	# Initial evolution
+	WF.evolve!(pop, burnin)
+	# Evolution
+	t = 0
+	it = 0
+	while t < evtime
+		WF.evolve!(pop, Δt)
+		t += Δt
+		popsample[t] = deepcopy(pop)
+		it += 1
+	end
+
+	return popsample
+end
+
+
 
 
 
