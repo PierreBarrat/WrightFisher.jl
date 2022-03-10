@@ -13,7 +13,8 @@ import StatsBase: sample, sample!
 const WF = WrightFisher
 export WF
 
-export Pop, FitnessLandscape
+export Pop
+export AdditiveFitness, ExpiringFitness, PairwiseFitness
 export evolve!
 export init_fitness_landscape
 export sample
