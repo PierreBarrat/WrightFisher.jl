@@ -67,11 +67,12 @@ mutable struct ExpiringFitness <: FitnessLandscape
 	α::Float64 # rate of decay of fitness
 end
 """
-	ExpiringFitness(s::Number, α::Number, L::Int)
+	ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
 """
-function ExpiringFitness(s::Number, α::Number, L::Int)
-	return ExpiringFitness(L, s*ones(L), zeros(Float64, L), s, α)
+function ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
+	return ExpiringFitness(L, H, zeros(Float64, L), s, α)
 end
+
 
 function init_fitness_landscape(fitness_type, L, s; α = 0.)
 	@assert in(fitness_type, fitness_landscape_types) "Unrecognized fitness type\
@@ -133,10 +134,33 @@ mutable struct Pop{F<:FitnessLandscape}
 end
 
 """
+	Pop(
+		fitness::FitnessLandscape;
+		N = 100, L = fitness.L, μ = .2 / N, init=:ones
+	)
+
+Initialize a population using a pre-built fitness landscape.
+"""
+function Pop(
+	fitness::FitnessLandscape;
+	N = 100, L = fitness.L, μ = .2 / N, init=:ones
+)
+	@assert in(init, (:ones, :rand, :random)) "Unrecognized input for `init` kwarg."
+	@assert fitness.L == L "Fitness landscape length $(fitness.L) differs from input length $L"
+	param = PopParam(N, L, μ)
+	if init == :ones
+		return ones_pop(fitness, param)
+	elseif init == :rand || init == :random
+		return random_pop(fitness, param)
+	else
+		@error "Unrecognized input for `init` kwarg."
+	end
+end
+"""
 	Pop(;
 		N = 100,
 		L = 10,
-		μ = 1 / N / L,
+		μ = .2 / N,
 		fitness_type = :additive,
 		s = 0.01,
 		α = 0.,
@@ -155,7 +179,7 @@ Initialize a population.
 function Pop(;
 	N = 100,
 	L = 1,
-	μ = 1 / N / L,
+	μ = .2 / N,
 	fitness_type = :additive,
 	s = 0.,
 	α = 0.,
@@ -164,29 +188,7 @@ function Pop(;
 	ϕ = init_fitness_landscape(fitness_type, L, s; α)
 	return Pop(ϕ; N, L, μ, init)
 end
-"""
-	Pop(
-		fitness::FitnessLandscape;
-		N = 100, L = fitness.L, μ = 1 / N / L, init=:ones
-	)
 
-Initialize a population using a pre-built fitness landscape.
-"""
-function Pop(
-	fitness::FitnessLandscape;
-	N = 100, L = fitness.L, μ = 1 / N / L, init=:ones
-)
-	@assert in(init, (:ones, :rand, :random)) "Unrecognized input for `init` kwarg."
-	@assert fitness.L == L "Fitness landscape length $(fitness.L) differs from input length $L"
-	param = PopParam(N, L, μ)
-	if init == :ones
-		return ones_pop(fitness, param)
-	elseif init == :rand || init == :random
-		return random_pop(fitness, param)
-	else
-		@error "Unrecognized input for `init` kwarg."
-	end
-end
 function ones_pop(fitness, param)
 	x = Genotype(param.L)
 	return Pop(
