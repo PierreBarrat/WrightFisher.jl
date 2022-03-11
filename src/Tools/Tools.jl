@@ -9,7 +9,7 @@ export evolve_sample_freqs, evolve_sample_freqs!, evolve_sample_pop!
 """
 	evolve_sample_freqs(
 		pop, evtime, Δt;
-		switchgen = Inf, kwargs...
+		switchgen = Inf, change_init_field = true, kwargs...
 	)
 
 Evolve `pop` for `evtime` generations and sample its frequencies every `Δt`. Extra keyword
@@ -19,7 +19,11 @@ function evolve_sample_freqs!(
 	pop, evtime, Δt;
 	switchgen = Inf, change_init_field = true, kwargs...
 )
-	change_init_field && WF.change_random_field!(pop; kwargs...)
+	nh = 0 # Number of changed fields
+	if change_init_field
+		pos, h = WF.change_random_field!(pop; kwargs...)
+		nh += !isnothing(pos)
+	end
 
 	freqs = zeros(Float64, div(evtime, Δt) + 1, 2*pop.param.L)
 	freqs[1, :] .= WF.f1(pop)
@@ -27,25 +31,23 @@ function evolve_sample_freqs!(
 	ϕ = zeros(Float64, div(evtime, Δt) + 1, 2*pop.param.L)
 	ϕ[1,:] .= WF.get_fitness_vector(pop)
 
-	# SF = zeros(Float64, div(evtime, Δt) + 1, 2*pop.param.L)
-	# SF[1,:] .= WF.get_summed_frequencies(pop)
-
 	t = 0
 	i = 2
 	while t < evtime
-		ϕ[i,:] .= WF.get_fitness_vector(pop)
-
 		WF.evolve!(pop, Δt)
 		freqs[i, :] .= WF.f1(pop)
+
+		ϕ[i,:] .= WF.get_fitness_vector(pop)
 
 		t += Δt
 		i += 1
 		if mod(t, switchgen) == 0
-			i, h = WF.change_random_field!(pop; kwargs...)
+			pos, h = WF.change_random_field!(pop; kwargs...)
+			nh += !isnothing(pos)
 		end
 	end
 
-	return freqs, ϕ
+	return freqs, ϕ, nh
 end
 
 """
@@ -54,19 +56,23 @@ end
 		N = 100, L = 10, μ = 0.1/L, s = 0.0, α = 0.,
 		fitness = WF.additive_fitness,
 		switchgen = Inf,
+		change_init_field = true,
+		kwargs...,
 	)
 
-Evolve a population for `evtime` generations and sample its frequencies every `Δt`.
+Evolve a population for `evtime` generations and sample its frequencies every `Δt`. Extra
+keyword arguments `kwargs` are passed to `WF.change_random_field!`.
 """
 function evolve_sample_freqs(
 	evtime, Δt;
 	N = 100, L = 10, μ = 0.1/L, s = 0.0, α = 0.,
 	fitness_type = :additive,
 	switchgen = Inf,
+	change_init_field = true,
+	kwargs...
 )
-	# pop = WF.init(; N, L, μ, s, α)
 	pop = Pop(; N, L, μ, fitness_type, s, α)
-	return evolve_sample_freqs!(pop, evtime, Δt; switchgen)
+	return evolve_sample_freqs!(pop, evtime, Δt; switchgen, change_init_field, kwargs...)
 end
 
 """

@@ -173,10 +173,11 @@ function change_random_field!(
 		return nothing, pop.fitness.H[i]
 	else
 		i = rand(epitopes[idx])
+		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
 		if isnothing(distribution)
-			pop.fitness.H[i] *= -1
+			pop.fitness.H[i] = -σ * pop.fitness.H[i]
 		else
-			pop.fitness.H[i] = -1. * sign(pop.fitness.H[i]) * rand(distribution)
+			pop.fitness.H[i] = -σ * rand(distribution)
 		end
 		return i, pop.fitness.H[i]
 	end
@@ -193,10 +194,11 @@ function change_random_field!(
 		return nothing, nothing
 	else
 		i = rand(epitopes[idx])
+		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
 		if isnothing(distribution)
-			pop.fitness.H[i] *= -1
+			pop.fitness.H[i] = -σ * pop.fitness.H[i]
 		else
-			pop.fitness.H[i] = -1. * sign(pop.fitness.H[i]) * rand(distribution)
+			pop.fitness.H[i] = -σ * rand(distribution)
 		end
 		pop.fitness.integrated_freq[i] = 0.
 		return i, pop.fitness.H[i]
