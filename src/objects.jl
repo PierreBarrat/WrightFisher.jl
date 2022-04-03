@@ -250,5 +250,12 @@ function remove!(pop::Pop, x::Genotype, i)
 	return pop
 end
 
+function size(pop::Pop)
+	N = 0.
+	for cnt in pop.counts
+		N += cnt
+	end
+	return N
+end
 
 

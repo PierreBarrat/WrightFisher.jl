@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 Dictionaries = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 PoissonRandom = "e409e4f3-bfea-5376-8464-e040bb5c01ab"
 RandomNumbers = "e6cf234a-135c-5ec9-84dd-332b85af5143"
