@@ -1,13 +1,14 @@
 module WrightFisher
 
 using Dictionaries
+using Distributions
 using LinearAlgebra
 using PoissonRandom
 using RandomNumbers
 using StatsBase
 
 import Base: ==
-import Base: hash, length, push!, in, delete!, show
+import Base: hash, length, push!, in, delete!, size, show
 import StatsBase: sample, sample!
 
 const WF = WrightFisher
