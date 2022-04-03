@@ -51,8 +51,9 @@ end
 
 function sample!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 	for (id, cnt) in pairs(pop.counts)
-		pop.counts[id] = pois_rand(rng, cnt)
+		pop.counts[id] = pois_rand(rng, cnt) # I should/could make this a multinomial
 	end
+
 	for (id,x) in pairs(pop.genotypes)
 		if pop.counts[id] == 0.
 			delete!(pop, x)
@@ -63,11 +64,7 @@ function sample!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 end
 
 function normalize!(pop::Pop)
-	N = 0
-	for cnt in pop.counts
-		N += cnt
-	end
-	N /= pop.param.N
+	N = size(pop) / pop.param.N
 	for (id, cnt) in pairs(pop.counts)
 		pop.counts[id] = pop.counts[id] / N
 	end
@@ -85,6 +82,7 @@ function evolve!(pop::Pop, n=1)
 	for i in 1:n
 		mutate!(pop, rng)
 		select!(pop)
+		pop.N = size(pop)
 		sample!(pop, rng)
 		normalize!(pop)
 	end
