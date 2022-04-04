@@ -34,7 +34,8 @@ end
 
 function select!(pop::Pop)
 	for (id, x) in pairs(pop.genotypes)
-		pop.counts[id] *= 1+fitness(x, pop.fitness)
+		# pop.counts[id] *= 1+fitness(x, pop.fitness)
+		pop.counts[id] *= exp(fitness(x, pop.fitness))
 	end
 
 	return nothing
@@ -42,7 +43,8 @@ end
 function select!(pop::Pop{ExpiringFitness})
 	sum_frequencies!(pop)
 	for (id, x) in pairs(pop.genotypes)
-		pop.counts[id] *= 1+fitness(x, pop.fitness)
+		# pop.counts[id] *= 1+fitness(x, pop.fitness)
+		pop.counts[id] *= exp(fitness(x, pop.fitness))
 	end
 
 	return nothing
