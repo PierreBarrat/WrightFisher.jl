@@ -66,7 +66,8 @@ end
 
 function select!(pop::Pop)
 	for (id, x) in pairs(pop.genotypes)
-		pop.counts[id] *= 1+fitness(x, pop.fitness)
+		# pop.counts[id] *= 1+fitness(x, pop.fitness)
+		pop.counts[id] *= exp(fitness(x, pop.fitness))
 	end
 
 	return nothing
@@ -74,7 +75,8 @@ end
 function select!(pop::Pop{ExpiringFitness})
 	sum_frequencies!(pop)
 	for (id, x) in pairs(pop.genotypes)
-		pop.counts[id] *= 1+fitness(x, pop.fitness)
+		# pop.counts[id] *= 1+fitness(x, pop.fitness)
+		pop.counts[id] *= exp(fitness(x, pop.fitness))
 	end
 
 	return nothing
@@ -100,6 +102,7 @@ function normalize!(pop::Pop)
 	for (id, cnt) in pairs(pop.counts)
 		pop.counts[id] = pop.counts[id] / N
 	end
+	pop.N = pop.param.N
 
 	return N
 end
@@ -113,8 +116,8 @@ function evolve!(pop::Pop, n=1)
 	for i in 1:n
 		mutate!(pop)
 		select!(pop)
-		pop.N = size(pop)
-		sample!(pop)
+		# pop.N = size(pop)
+		sample!(pop, rng)
 		normalize!(pop)
 	end
 
