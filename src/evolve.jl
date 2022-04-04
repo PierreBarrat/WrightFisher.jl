@@ -117,7 +117,7 @@ function evolve!(pop::Pop, n=1)
 		mutate!(pop)
 		select!(pop)
 		# pop.N = size(pop)
-		sample!(pop, rng)
+		sample!(pop)
 		normalize!(pop)
 	end
 
