@@ -1,23 +1,23 @@
-function mutate(x::Genotype, nmut, rng)
+function mutate(x::Genotype, nmut)
 	s = copy(x.seq)
 	for n in 1:nmut
-		i = rand(rng, 1:length(x))
+		i = rand(1:length(x))
 		s[i] = -s[i]
 	end
 
 	return Genotype(s, hash(s))
 end
 
-function mutate!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
+function mutate!(pop::Pop)
 	# Expected number of double mutants: 1/2*L^2*μ^2*N
-	Z = if 1/2 * (pop.param.μ)^2 * (pop.param.L)^2 * (pop.param.N)^2 < 0.05
-		mutate_unique!(pop, rng)
+	Z = if 1/2 * (pop.param.μ)^2 * (pop.param.L)^2 * (pop.param.N) < 0.05
+		mutate_unique!(pop)
 	else
-		mutate_exact!(pop, rng)
+		mutate_exact!(pop)
 	end
 	return Z
 end
-function mutate_unique!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
+function mutate_unique!(pop::Pop)
 	# Introducing at most one mutation per sequence
 	λ = pop.param.μ * pop.param.L
 	Z = 0
@@ -28,8 +28,8 @@ function mutate_unique!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 		z = 0
 		i = 1
 		for i in 1:C
-			if rand(rng) < λ
-				y = mutate(x, 1, rng)
+			if rand() < λ
+				y = mutate(x, 1)
 				z += 1
 				push!(pop, y)
 			end
@@ -40,7 +40,7 @@ function mutate_unique!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 
 	return Z
 end
-function mutate_exact!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
+function mutate_exact!(pop::Pop)
 	λ = pop.param.μ * pop.param.L
 	Z = 0
 	ids = collect(keys(pop.genotypes))
@@ -50,9 +50,9 @@ function mutate_exact!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 		z = 0
 		i = 1
 		for i in 1:C
-			nm = pois_rand(rng, λ)
+			nm = pois_rand(λ)
 			if nm > 0
-				y = mutate(x, nm, rng)
+				y = mutate(x, nm)
 				z += 1
 				push!(pop, y)
 			end
@@ -81,9 +81,9 @@ function select!(pop::Pop{ExpiringFitness})
 end
 
 
-function sample!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
+function sample!(pop::Pop)
 	for (id, cnt) in pairs(pop.counts)
-		pop.counts[id] = pois_rand(rng, cnt) # I should/could make this a multinomial
+		pop.counts[id] = pois_rand(cnt) # I should/could make this a multinomial
 	end
 
 	for (id,x) in pairs(pop.genotypes)
@@ -110,12 +110,11 @@ end
 Evolve `pop` for `n` generations.
 """
 function evolve!(pop::Pop, n=1)
-	rng = Xorshifts.Xoroshiro128Plus()
 	for i in 1:n
-		mutate!(pop, rng)
+		mutate!(pop)
 		select!(pop)
 		pop.N = size(pop)
-		sample!(pop, rng)
+		sample!(pop)
 		normalize!(pop)
 	end
 
