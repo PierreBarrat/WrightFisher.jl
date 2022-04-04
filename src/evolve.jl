@@ -9,6 +9,38 @@ function mutate(x::Genotype, nmut, rng)
 end
 
 function mutate!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
+	# Expected number of double mutants: 1/2*L^2*μ^2*N
+	Z = if 1/2 * (pop.param.μ)^2 * (pop.param.L)^2 * (pop.param.N)^2 < 0.05
+		mutate_unique!(pop, rng)
+	else
+		mutate_exact!(pop, rng)
+	end
+	return Z
+end
+function mutate_unique!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
+	# Introducing at most one mutation per sequence
+	λ = pop.param.μ * pop.param.L
+	Z = 0
+	ids = collect(keys(pop.genotypes))
+	for id in ids
+		x = pop.genotypes[id]
+		C = Int(floor(pop.counts[id]))
+		z = 0
+		i = 1
+		for i in 1:C
+			if rand(rng) < λ
+				y = mutate(x, 1, rng)
+				z += 1
+				push!(pop, y)
+			end
+		end
+		remove!(pop, x, z)
+		Z += z
+	end
+
+	return Z
+end
+function mutate_exact!(pop::Pop, rng = Xorshifts.Xoroshiro128Plus())
 	λ = pop.param.μ * pop.param.L
 	Z = 0
 	ids = collect(keys(pop.genotypes))
