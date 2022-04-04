@@ -20,12 +20,12 @@ function frequencies(pop::Pop)
 			end
 		end
 	end
-	# f1 .= (f1 / pop.N) / 2 .+ 0.5
+	# f1 .= (f1 / size(pop)) / 2 .+ 0.5
 	# # Adding state -1
 	# for i in 1:(Int(length(f1)/2))
 	# 	f1[2*i] = 1 - f1[2*i - 1]
 	# end
-	f1 ./= pop.N
+	f1 ./= size(pop)
 	return f1
 end
 f1(pop::Pop) = frequencies(pop)
@@ -51,7 +51,7 @@ function f2(pop::Pop)
 		end
 	end
 
-	f2 ./= pop.N
+	f2 ./= size(pop)
 	return f2
 end
 
@@ -65,7 +65,7 @@ function sum_frequencies!(pop::Pop{ExpiringFitness})
 	for (id,x) in pairs(pop.genotypes)
 		for (i,(s,h)) in enumerate(zip(x.seq, pop.fitness.H))
 			if h != 0 && sign(h) == sign(s)
-				pop.fitness.integrated_freq[i] += pop.counts[id]/pop.N
+				pop.fitness.integrated_freq[i] += pop.counts[id]/size(pop)
 			end
 		end
 	end

@@ -68,6 +68,7 @@ function normalize!(pop::Pop)
 	for (id, cnt) in pairs(pop.counts)
 		pop.counts[id] = pop.counts[id] / N
 	end
+	pop.N = pop.param.N
 
 	return N
 end
@@ -82,7 +83,7 @@ function evolve!(pop::Pop, n=1)
 	for i in 1:n
 		mutate!(pop, rng)
 		select!(pop)
-		pop.N = size(pop)
+		# pop.N = size(pop)
 		sample!(pop, rng)
 		normalize!(pop)
 	end
