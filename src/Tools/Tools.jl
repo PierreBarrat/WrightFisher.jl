@@ -20,7 +20,7 @@ function evolve_sample_freqs!(
 	switchgen = Inf, change_init_field = true, change_field = :random, kwargs...
 )
 	nh = 0 # Number of changed fields
-	if change_init_field
+	if switchgen < Inf && change_init_field
 		pos, h = WF.change_random_field!(pop; kwargs...)
 		nh += !isnothing(pos)
 	end
