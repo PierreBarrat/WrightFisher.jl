@@ -78,6 +78,7 @@ end
 function select!(pop::Pop{ExpiringFitness})
 	sum_frequencies!(pop)
 	for (id, x) in pairs(pop.genotypes)
+		ϕ = fitness(x, pop.fitness)
 		if ϕ != 0
 			pop.counts[id] *= exp(fitness(x, pop.fitness))
 		end
