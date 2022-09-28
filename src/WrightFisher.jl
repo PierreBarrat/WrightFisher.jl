@@ -15,7 +15,7 @@ const WF = WrightFisher
 export WF
 
 export Pop
-export AdditiveFitness, ExpiringFitness, PairwiseFitness
+export AdditiveFitness, ExpiringFitness, NeutralFitness, PairwiseFitness
 export evolve!
 export init_fitness_landscape
 export sample

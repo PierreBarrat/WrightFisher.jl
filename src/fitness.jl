@@ -59,3 +59,4 @@ function fitness(x::Genotype, ϕ::PairwiseFitness)
 	return f
 end
 
+fitness(x::Genotype, ϕ::NeutralFitness) = 0

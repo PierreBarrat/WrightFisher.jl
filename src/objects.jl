@@ -26,11 +26,42 @@ Base.length(x::Genotype) = length(x.seq)
 ######################################################################
 
 abstract type FitnessLandscape end
-
-const fitness_landscape_types = (:additive, :expiring, :pairwise)
+#=
+To implement
+- `fitness(::Genotype, ϕ::FitnessLandscape)`
+=#
 
 """
-	AdditiveFitness(L::Int, H::Vector{Float32}, s::Float64)
+	const fitness_landscape_types
+
+`(:additive, :expiring, :neutral, :pairwise)`.
+"""
+const fitness_landscape_types = (:additive, :expiring, :neutral, :pairwise)
+
+"""
+# Summary
+```
+struct NeutralFitness <: FitnessLandscape end
+```
+
+Empty struct to represent neutral evolution.
+"""
+struct NeutralFitness <: FitnessLandscape end
+
+Base.length(f::NeutralFitness) = 0
+
+"""
+# Summary
+```
+mutable struct AdditiveFitness <: FitnessLandscape
+```
+
+# Fields
+```
+L::Int
+H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
+s::Float64 # overall magnitude
+```
 """
 mutable struct AdditiveFitness <: FitnessLandscape
 	L::Int
@@ -44,10 +75,12 @@ Create an `AdditiveFitness` landscape with positive fields of magnitude `s`.
 """
 AdditiveFitness(s::Number, L::Int) = AdditiveFitness(L, s * ones(L), s)
 
+Base.length(f::AdditiveFitness) = f.L
+
 """
 # Summary
 ```
-mutable struct WrightFisher.ExpiringFitness <: FitnessLandscape
+mutable struct ExpiringFitness <: FitnessLandscape
 ```
 
 # Fields
@@ -73,21 +106,22 @@ function ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
 	return ExpiringFitness(L, H, zeros(Float64, L), s, α)
 end
 
+Base.length(f::ExpiringFitness) = f.L
 
-function init_fitness_landscape(fitness_type, L, s; α = 0.)
-	@assert in(fitness_type, fitness_landscape_types) "Unrecognized fitness type\
-	 $(fitness_type) - Allowed types $(fitness_landscape_types)."
+"""
+# Summary
+```
+mutable struct Pairwise <: FitnessLandscape
+```
 
-	if fitness_type == :additive
-		α != 0 && @warn "Additive fitness type and non-zero decay rate α=$α. Ignoring α."
-		return AdditiveFitness(s, L)
-	elseif fitness_type == :expiring
-		return ExpiringFitness(s, α, L)
-	elseif fitness_type == :pairwise
-		return PairwiseFitness(s, L)
-	end
-end
-
+# Fields
+```
+L::Int
+H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
+J::Matrix{Float32}
+s::Float64 # overall magnitude
+```
+"""
 mutable struct PairwiseFitness <: FitnessLandscape
 	L::Int
 	H::Vector{Float32}
@@ -112,6 +146,30 @@ end
 """
 function PairwiseFitness(H::Vector{Float64}, J::Matrix{Float64})
 	return PairwiseFitness(length(H), H, J, abs(mean(H)) + std(H))
+end
+
+Base.length(f::PairwiseFitness) = f.L
+
+
+"""
+	init_fitness_landscape(fitness_type::Symbol, L, s; α = 0.)
+
+Simple initialization for fitness types in `fitness_landscape_type`.
+"""
+function init_fitness_landscape(fitness_type, L, s; α = 0.)
+	@assert in(fitness_type, fitness_landscape_types) "Unrecognized fitness type\
+	 $(fitness_type) - Allowed types $(fitness_landscape_types)."
+
+	if fitness_type == :additive
+		α != 0 && @warn "Additive fitness type and non-zero decay rate α=$α. Ignoring α."
+		return AdditiveFitness(s, L)
+	elseif fitness_type == :expiring
+		return ExpiringFitness(s, α, L)
+	elseif fitness_type == :neutral
+		return NeutralFitness()
+	elseif fitness_type == :pairwise
+		return PairwiseFitness(s, L)
+	end
 end
 
 ######################################################################
@@ -143,10 +201,9 @@ Initialize a population using a pre-built fitness landscape.
 """
 function Pop(
 	fitness::FitnessLandscape;
-	N = 100, L = fitness.L, μ = .2 / N, init=:ones
+	N = 100, L = length(fitness), μ = .2 / N, init=:ones
 )
 	@assert in(init, (:ones, :rand, :random)) "Unrecognized input for `init` kwarg."
-	@assert fitness.L == L "Fitness landscape length $(fitness.L) differs from input length $L"
 	param = PopParam(N, L, μ)
 	if init == :ones
 		return ones_pop(fitness, param)
