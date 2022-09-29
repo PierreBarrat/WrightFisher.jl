@@ -18,7 +18,7 @@ end
 function mutate!(pop::Pop)
 	# Expected number of double mutants: 1/2*L^2*μ^2*N
 	λ = pop.param.N * pop.param.μ * pop.param.L
-	Z = if λ < Inf
+	Z = if λ < 250
 		mutate_low!(pop)
 	else
 		mutate_high!(pop)
