@@ -15,17 +15,18 @@ function mutate_position(x::Genotype, i::Int)
 	return Genotype(s, hash(s))
 end
 
-# function mutate!(pop::Pop)
-# 	# Expected number of double mutants: 1/2*L^2*μ^2*N
-# 	Z = if 1/2 * (pop.param.μ)^2 * (pop.param.L)^2 * (pop.param.N) < 0.05
-# 		mutate_unique!(pop)
-# 	else
-# 		mutate_exact!(pop)
-# 	end
-# 	return Z
-# end
+function mutate!(pop::Pop)
+	# Expected number of double mutants: 1/2*L^2*μ^2*N
+	λ = pop.param.N * pop.param.μ * pop.param.L
+	Z = if λ < Inf
+		mutate_low!(pop)
+	else
+		mutate_high!(pop)
+	end
+	return Z
+end
 
-function mutate!(pop)
+function mutate_low!(pop)
 	λ = pop.param.N * pop.param.μ * pop.param.L
 	ids = collect(keys(pop.genotypes))
 
@@ -69,6 +70,29 @@ function mutate!(pop)
 	end
 
 	return Nmuts
+end
+function mutate_high!(pop::Pop)
+	λ = pop.param.μ * pop.param.L
+	Z = 0
+	ids = collect(keys(pop.genotypes))
+	for id in ids
+		x = pop.genotypes[id]
+		C = Int(floor(pop.counts[id]))
+		z = 0
+		i = 1
+		for i in 1:C
+			nm = pois_rand(λ)
+			if nm > 0
+				y = mutate(x, nm)
+				z += 1
+				push!(pop, y)
+			end
+		end
+		remove!(pop, x, z)
+		Z += z
+	end
+
+	return Z
 end
 
 function select!(pop::Pop)
