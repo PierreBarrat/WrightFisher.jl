@@ -9,6 +9,13 @@ function fitness(x::Genotype, ϕ::AdditiveFitness)
 	end
 	return f
 end
+function fitness(xi::Integer, i::Integer, ϕ::AdditiveFitness)
+	if xi > 0 && ϕ.H[i] > 0. || xi < 0 && ϕ.H[i] < 0.
+		return abs(ϕ.H[i])
+	else
+		return -abs(ϕ.H[i])
+	end
+end
 
 function fitness(x::Genotype, ϕ::ExpiringFitness)
 	@assert length(x) == ϕ.L "Genotype $(length(x)) and fitness landscape $(ϕ.L) \
