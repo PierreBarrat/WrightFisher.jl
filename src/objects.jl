@@ -177,10 +177,12 @@ end
 ######################################################################
 
 
-struct PopParam
+Base.@kwdef struct PopParam
 	N::Int # population size
 	L::Int # length of genomes
 	μ::Float64 # mutation rate (per gen per site)
+
+	sampling_method::Symbol = :free
 end
 
 mutable struct Pop{F<:FitnessLandscape}
@@ -201,10 +203,10 @@ Initialize a population using a pre-built fitness landscape.
 """
 function Pop(
 	fitness::FitnessLandscape;
-	N = 100, L = length(fitness), μ = .2 / N, init=:ones
+	N = 100, L = length(fitness), μ = .2 / N, init=:ones, sampling_method=:free,
 )
 	@assert in(init, (:ones, :rand, :random)) "Unrecognized input for `init` kwarg."
-	param = PopParam(N, L, μ)
+	param = PopParam(N, L, μ, sampling_method)
 	if init == :ones
 		return ones_pop(fitness, param)
 	elseif init == :rand || init == :random
@@ -241,9 +243,10 @@ function Pop(;
 	s = 0.,
 	α = 0.,
 	init = :ones,
+	kwargs...
 )
 	ϕ = init_fitness_landscape(fitness_type, L, s; α)
-	return Pop(ϕ; N, L, μ, init)
+	return Pop(ϕ; N, L, μ, init, kwargs...)
 end
 
 function ones_pop(fitness, param)

@@ -118,19 +118,51 @@ function select!(pop::Pop{ExpiringFitness})
 	return nothing
 end
 
+function sample_multinomial!(pop::Pop)
+	@debug "Sampling with multinomial method. Counts before: $(collect(pop.counts))"
+	p = collect(pop.counts) / size(pop)
+	new_counts = rand(Multinomial(Int(pop.N), p))
+	for (i, (id, cnt)) in enumerate(pairs(pop.counts))
+		pop.counts[id] = new_counts[i]
+	end
 
-function sample!(pop::Pop)
+	delete_null_genotypes!(pop)
+	@debug "Sampling with multinomial method. Counts after: $(collect(pop.counts))"
+
+	return pop
+end
+function sample_poisson!(pop::Pop)
+	@debug "Sampling with poisson method. Counts before: $(collect(pop.counts))"
 	for (id, cnt) in pairs(pop.counts)
 		pop.counts[id] = pois_rand(cnt) # I should/could make this a multinomial
 	end
-
-	for (id,x) in pairs(pop.genotypes)
-		if pop.counts[id] == 0.
-			delete!(pop, x)
-		end
+	if sum(pop.counts) == 0
+		@warn "Sampled an empty population. For small populations, use multinomial sampling instead of Poisson."
 	end
+	delete_null_genotypes!(pop)
+	normalize!(pop)
+
+	@debug "Sampling with poisson method. Counts after: $(collect(pop.counts))"
 
 	return pop
+end
+function sample!(pop::Pop; method = :free)
+	if method == :free
+		return length(pop) > 100 ? sample_poisson!(pop) : sample_multinomial!(pop)
+	elseif method == :poisson
+		return sample_poisson!(pop)
+	elseif method == :multinomial
+		return sample_multinomial!(pop)
+	end
+end
+
+function delete_null_genotypes!(pop)
+	ids = findall(id -> pop.counts[id] == 0, keys(pop.genotypes))
+	for id in ids
+		delete!(pop, pop.genotypes[id])
+	end
+
+	return nothing
 end
 
 function normalize!(pop::Pop)
@@ -153,8 +185,11 @@ function evolve!(pop::Pop, n=1)
 		mutate!(pop)
 		select!(pop)
 		# pop.N = size(pop)
-		sample!(pop)
-		normalize!(pop)
+		sample!(pop; method=pop.param.sampling_method)
+		@debug "Generation $i - Counts of genomes $(collect(pop.counts)) - Actual pop size $(size(pop))"
+		if length(pop) == 0
+			@warn "Empty population at generation $i: there was likely an issue somewhere."
+		end
 	end
 
 	return nothing
