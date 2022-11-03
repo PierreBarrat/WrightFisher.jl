@@ -148,7 +148,7 @@ function sample_poisson!(pop::Pop)
 end
 function sample!(pop::Pop; method = :free)
 	if method == :free
-		return length(pop) > 100 ? sample_poisson!(pop) : sample_multinomial!(pop)
+		return length(pop) > 25 ? sample_poisson!(pop) : sample_multinomial!(pop)
 	elseif method == :poisson
 		return sample_poisson!(pop)
 	elseif method == :multinomial
@@ -157,9 +157,12 @@ function sample!(pop::Pop; method = :free)
 end
 
 function delete_null_genotypes!(pop)
-	ids = findall(id -> pop.counts[id] == 0, keys(pop.genotypes))
-	for id in ids
-		delete!(pop, pop.genotypes[id])
+	# does not work like intended but it's probably not too bad
+	# ids = findall(id -> pop.counts[id] == 0, keys(pop.genotypes))
+	for id in keys(pop.genotypes)
+		if pop.counts[id] == 0
+			delete!(pop, pop.genotypes[id])
+		end
 	end
 
 	return nothing
@@ -168,7 +171,7 @@ end
 function normalize!(pop::Pop)
 	N = size(pop) / pop.param.N
 	for (id, cnt) in pairs(pop.counts)
-		pop.counts[id] = pop.counts[id] / N
+		pop.counts[id] /=  N
 	end
 	pop.N = pop.param.N
 
