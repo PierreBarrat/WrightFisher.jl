@@ -63,17 +63,16 @@ H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
 s::Float64 # overall magnitude
 ```
 """
-mutable struct AdditiveFitness <: FitnessLandscape
+Base.@kwdef mutable struct AdditiveFitness <: FitnessLandscape
 	L::Int
 	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
-	s::Float64 # overall magnitude
 end
 """
 	AdditiveFitness(s::Number, L::Int)
 
 Create an `AdditiveFitness` landscape with positive fields of magnitude `s`.
 """
-AdditiveFitness(s::Number, L::Int) = AdditiveFitness(L, s * ones(L), s)
+AdditiveFitness(s::Number, L::Int) = AdditiveFitness(L, s * ones(L))
 
 Base.length(f::AdditiveFitness) = f.L
 
@@ -92,18 +91,17 @@ s::Float64 # overall magnitude
 α::Float64 # rate of decay of fitness
 ```
 """
-mutable struct ExpiringFitness <: FitnessLandscape
+Base.@kwdef mutable struct ExpiringFitness <: FitnessLandscape
 	L::Int
 	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
-	integrated_freq::Vector{Float64} # Summed frequency of the state favored by H
-	s::Float64 # overall magnitude
-	α::Float64 # rate of decay of fitness
+	α::Float64 # decay rate of fitness advantage
+	integrated_freq::Vector{Float64} = zeros(L) # Summed frequency of the state favored by H
 end
 """
 	ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
 """
 function ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
-	return ExpiringFitness(L, H, zeros(Float64, L), s, α)
+	return ExpiringFitness(L, H, α, zeros(Float64, L))
 end
 
 Base.length(f::ExpiringFitness) = f.L
@@ -122,15 +120,14 @@ J::Matrix{Float32}
 s::Float64 # overall magnitude
 ```
 """
-mutable struct PairwiseFitness <: FitnessLandscape
+Base.@kwdef mutable struct PairwiseFitness <: FitnessLandscape
 	L::Int
 	H::Vector{Float32}
 	J::Matrix{Float32}
-	s::Float64
-	function PairwiseFitness(L, H, J, s)
+	function PairwiseFitness(L, H, J)
 		@assert issymmetric(J) "Coupling matrix must be symmetric."
 		@assert sum(i->J[i,i], 1:L) == 0 "Coupling matrix must have null diagonal."
-		return new(L, H, J, s)
+		return new(L, H, J)
 	end
 end
 """
@@ -139,13 +136,13 @@ end
 Return `PairwiseFitness` landscape with null couplings and fields equal to `s`.
 """
 function PairwiseFitness(s::Number, L::Int)
-	return PairwiseFitness(L, s * ones(L), s/(L-1)*Symmetric(zeros(L,L)), s)
+	return PairwiseFitness(L, s * ones(L), s/(L-1)*Symmetric(zeros(L,L)))
 end
 """
 	PairwiseFitness(H::Vector{Float64}, J::Matrix{Float64})
 """
 function PairwiseFitness(H::Vector{Float64}, J::Matrix{Float64})
-	return PairwiseFitness(length(H), H, J, abs(mean(H)) + std(H))
+	return PairwiseFitness(length(H), H, J)
 end
 
 Base.length(f::PairwiseFitness) = f.L
