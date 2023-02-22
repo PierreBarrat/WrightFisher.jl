@@ -86,8 +86,8 @@ mutable struct ExpiringFitness <: FitnessLandscape
 ```
 L::Int
 H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
-integrated_freq::Vector{Float64} # Summed frequency of the state favored by H
-α::Float64 # rate of decay of fitness
+α::Float64 # decay rate of fitness advantage
+s::Distribution # values to sample from when re-initializing fitness
 ```
 """
 Base.@kwdef mutable struct ExpiringFitness <: FitnessLandscape

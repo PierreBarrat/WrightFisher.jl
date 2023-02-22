@@ -101,18 +101,6 @@ function select!(pop::Pop)
 		if ϕ != 0
 			pop.counts[id] *= exp(ϕ)
 		end
-
-	end
-
-	return nothing
-end
-function select!(pop::Pop{ExpiringFitness})
-	# sum_frequencies!(pop)
-	for (id, x) in pairs(pop.genotypes)
-		ϕ = fitness(x, pop.fitness)
-		if ϕ != 0
-			pop.counts[id] *= exp(ϕ)
-		end
 	end
 
 	return nothing
@@ -187,7 +175,6 @@ function evolve!(pop::Pop, n=1)
 	for i in 1:n
 		mutate!(pop)
 		select!(pop)
-		# pop.N = size(pop)
 		sample!(pop; method=pop.param.sampling_method)
 		@debug "Generation $i - Counts of genomes $(collect(pop.counts)) - Actual pop size $(size(pop))"
 		if length(pop) == 0
@@ -202,7 +189,6 @@ function evolve!(pop::Pop{ExpiringFitness}, n=1)
 		mutate!(pop)
 		update_fitness!(pop)
 		select!(pop)
-		# pop.N = size(pop)
 		sample!(pop; method=pop.param.sampling_method)
 		@debug "Generation $i - Counts of genomes $(collect(pop.counts)) - Actual pop size $(size(pop))"
 		if length(pop) == 0

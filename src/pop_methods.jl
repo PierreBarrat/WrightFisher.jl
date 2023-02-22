@@ -11,7 +11,6 @@ Single site frequencies of `pop`.
 function frequencies(pop::Pop)
 	f1 = zeros(Float64, 2 * pop.param.L)
 	for (id, x) in pairs(pop.genotypes)
-		# f1 .+= x.seq * pop.counts[id]
 		for (i,s) in enumerate(x.seq)
 			if s > 0
 				f1[2*(i-1) + 1] += pop.counts[id]
@@ -20,11 +19,6 @@ function frequencies(pop::Pop)
 			end
 		end
 	end
-	# f1 .= (f1 / size(pop)) / 2 .+ 0.5
-	# # Adding state -1
-	# for i in 1:(Int(length(f1)/2))
-	# 	f1[2*i] = 1 - f1[2*i - 1]
-	# end
 	f1 ./= size(pop)
 	return f1
 end
@@ -106,7 +100,7 @@ function update_fitness!(pop::Pop{ExpiringFitness})
 	for (id, x) in pairs(pop.genotypes)
 		X = pop.counts[id]
 		for (i, (s, h)) in enumerate(zip(x.seq, pop.fitness.H))
-			if h != 0 && ((h > 0 && s > 0) || (h < 0 && s < 0)) #sign(h) == sign(s)
+			if (h > 0 && s > 0) || (h < 0 && s < 0) # ~ h != 0 && sign(h) == sign(s)
 				pop.fitness.H[i] -= αN * h * X
 			end
 		end
