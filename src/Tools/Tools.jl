@@ -9,15 +9,22 @@ export evolve_sample_freqs, evolve_sample_freqs!, evolve_sample_pop!
 """
 	evolve_sample_freqs(
 		pop, evtime, Δt;
-		switchgen = Inf, change_init_field = true, change_field = :random, kwargs...
+		switchgen = Inf,
+		change_init_field = true,
+		change_field_time = :random, # :periodic or :random
+		change_field_pos = :cyclic, # :cyclic or :random !! NOT IMPLEMENTED !!
+		kwargs...
 	)
 
-Evolve `pop` for `evtime` generations and sample its frequencies every `Δt`. Extra keyword
-arguments `kwargs` are passed to `WF.change_random_field!`.
+Evolve `pop` for `evtime` generations and sample its frequencies every `Δt`.
+
+Every `switchgen` generation, change the sign of a fitness field at one genome position
+using `WF.change_random_field!`.
+Extra keyword arguments `kwargs` are passed to `WF.change_random_field!`.
 """
 function evolve_sample_freqs!(
 	pop, evtime, Δt;
-	switchgen = Inf, change_init_field = true, change_field = :random, kwargs...
+	switchgen = Inf, change_init_field = true, change_field_time = :random, kwargs...
 )
 	nh = 0 # Number of changed fields
 	if switchgen < Inf && change_init_field
@@ -25,15 +32,15 @@ function evolve_sample_freqs!(
 		nh += !isnothing(pos)
 	end
 
-	freqs = zeros(Float64, div(evtime, Δt) + 1, 2*pop.param.L)
+	freqs = zeros(Float64, div(evtime, Δt) + 2, 2*pop.param.L)
 	freqs[1, :] .= WF.f1(pop)
 
-	ϕ = zeros(Float64, div(evtime, Δt) + 1, 2*pop.param.L)
+	ϕ = zeros(Float64, div(evtime, Δt) + 2, 2*pop.param.L)
 	ϕ[1,:] .= WF.get_fitness_vector(pop)
 
 	t = 0
 	i = 2
-	while t < evtime
+	while t <= evtime
 		WF.evolve!(pop, Δt)
 
 		freqs[i, :] .= WF.f1(pop)
@@ -43,12 +50,12 @@ function evolve_sample_freqs!(
 		i += 1
 
 		# Introducing the possibility of a beneficial mutation
-		if change_field == :periodic
+		if change_field_time == :periodic
 			if mod(t, switchgen) == 0
 				pos, h = WF.change_random_field!(pop; kwargs...)
 				nh += !isnothing(pos)
 			end
-		elseif change_field == :random
+		elseif change_field_time == :random
 			for r in rand(Δt)
 				if r < 1/switchgen
 					pos, h = WF.change_random_field!(pop; kwargs...)
@@ -56,7 +63,7 @@ function evolve_sample_freqs!(
 				end
 			end
 		else
-			@error "kwarg `change_field` must be one of `(:periodic, :random)`; \
+			@error "kwarg `change_field_time` must be one of `(:periodic, :random)`; \
 				got $(change_field)"
 		end
 	end
@@ -74,8 +81,8 @@ end
 		kwargs...,
 	)
 
-Evolve a population for `evtime` generations and sample its frequencies every `Δt`. Extra
-keyword arguments `kwargs` are passed to `WF.change_random_field!`.
+Construct and evolve a population for `evtime` generations and sample its frequencies
+every `Δt`. Extra keyword arguments `kwargs` are passed to `WF.change_random_field!`.
 """
 function evolve_sample_freqs(
 	evtime, Δt;

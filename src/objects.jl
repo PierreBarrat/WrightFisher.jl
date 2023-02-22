@@ -87,7 +87,6 @@ mutable struct ExpiringFitness <: FitnessLandscape
 L::Int
 H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
 integrated_freq::Vector{Float64} # Summed frequency of the state favored by H
-s::Float64 # overall magnitude
 α::Float64 # rate of decay of fitness
 ```
 """

@@ -130,15 +130,6 @@ function get_fitness_vector(pop)
 	return ϕ
 end
 
-# """
-# 	change_random_field!(pop::Pop)
-# """
-# function change_random_field!(pop::Pop)
-# 	i = rand(1:length(pop.fitness.H))
-# 	pop.fitness.H[i] *= -1
-# 	return i, pop.fitness.H[i]
-# end
-
 """
 	change_random_field!(
 		pop::Pop;
@@ -147,17 +138,14 @@ end
 		distribution = nothing,
 	)
 
-Try to change a field in `pop.fitness`. Only consider `epitopes` position at which the
-frequency of one character is lower than `max_freq`. The new field is drawn from \
-`distribution` and has the opposite sign of the previous field.
+Try to change a field in `pop.fitness`.
 If a field was changed, return `(i, new_field)`. If no field was changed because none of the
-epitope positions matched the conditions, return `(nothing, old_field)`.
-
+epitope positions matched the conditions, return `(nothing, nothing)`.
 
 ## Arguments
-
 - `epitopes`: positions where the fields can be changed
 - `max_freq`: a field at position `i` is only changed if `f_i(1-f_i) < max_freq(1-max_freq)`.
+  This selects non-variable positions. No effect if `max_freq=0.5`.
 - `distribution`: distribution of the fitness effects. If `nothing`, only the sign of the \
 	field is changed. Should have support over positive numbers only.
 """
@@ -170,7 +158,7 @@ function change_random_field!(
 	f = f1(pop)
 	idx = findall(i->f[2*(i-1)+1] * (1-f[2*(i-1)+1]) < max_freq*(1-max_freq), epitopes)
 	if isempty(idx)
-		return nothing, pop.fitness.H[i]
+		return nothing, nothing
 	else
 		i = rand(epitopes[idx])
 		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
