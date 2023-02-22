@@ -21,7 +21,7 @@ function fitness(x::Genotype, ϕ::ExpiringFitness)
 	@assert length(x) == ϕ.L "Genotype $(length(x)) and fitness landscape $(ϕ.L) \
 	must have the same length"
 	f = 0
-	for (xi, hi, Fi) in zip(x.seq, ϕ.H, ϕ.integrated_freq)
+	@fastmath for (xi, hi, Fi) in zip(x.seq, ϕ.H, ϕ.integrated_freq)
 		f += xi * hi * exp(-ϕ.α * Fi)
 	end
 	return f

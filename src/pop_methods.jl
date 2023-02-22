@@ -62,10 +62,11 @@ Update `pop.fitness.integrated_freq`: for the state `s` at each position `i`,
 add the frequency of `s` to `integrated_freq` if `s` is favored by the field at `i`.
 """
 function sum_frequencies!(pop::Pop{ExpiringFitness})
+	N = size(pop)
 	for (id,x) in pairs(pop.genotypes)
 		for (i,(s,h)) in enumerate(zip(x.seq, pop.fitness.H))
 			if h != 0 && sign(h) == sign(s)
-				pop.fitness.integrated_freq[i] += pop.counts[id]/size(pop)
+				pop.fitness.integrated_freq[i] += pop.counts[id]/N
 			end
 		end
 	end
