@@ -55,6 +55,7 @@ function f2(pop::Pop)
 	return f2
 end
 
+
 """
 	sum_frequencies!(pop::Pop)
 
@@ -92,6 +93,24 @@ end
 ######################################################################
 ############################### FITNESS ##############################
 ######################################################################
+
+
+"""
+	update_fitness!(pop::Pop{ExpiringFitness})
+
+Apply `s(t+1) -= α*s(t)*f` for fitness at all positions.
+"""
+function update_fitness!(pop::Pop{ExpiringFitness})
+	N = size(pop)
+	for (id, x) in pairs(pop.genotypes)
+		for (i, (s, h)) in enumerate(zip(x.seq, pop.fitness.H))
+			if h != 0 && sign(h) == sign(s)
+				pop.fitness.H[i] -= pop.fitness.α * pop.fitness.H[i] * pop.counts[id]/N
+			end
+		end
+	end
+end
+
 
 fields(pop::Pop) = fields(pop.fitness)
 function fields(ϕ::FitnessLandscape)
@@ -175,7 +194,6 @@ function change_random_field!(
 	pop::Pop{ExpiringFitness};
 	epitopes = 1:pop.param.L,
 	max_freq = 0.5,
-	distribution = nothing,
 )
 	f = f1(pop)
 	idx = findall(i->f[2*(i-1)+1] * (1-f[2*(i-1)+1]) < max_freq*(1-max_freq), epitopes)
@@ -184,12 +202,7 @@ function change_random_field!(
 	else
 		i = rand(epitopes[idx])
 		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
-		if isnothing(distribution)
-			pop.fitness.H[i] = -σ * pop.fitness.H[i]
-		else
-			pop.fitness.H[i] = -σ * rand(distribution)
-		end
-		pop.fitness.integrated_freq[i] = 0.
+		pop.fitness.H[i] = -σ * rand(pop.fitness.s)
 		return i, pop.fitness.H[i]
 	end
 end

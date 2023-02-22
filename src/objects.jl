@@ -94,13 +94,13 @@ Base.@kwdef mutable struct ExpiringFitness <: FitnessLandscape
 	L::Int
 	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
 	α::Float64 # decay rate of fitness advantage
-	integrated_freq::Vector{Float64} = zeros(L) # Summed frequency of the state favored by H
+	s::Distribution # values to sample from when re-initializing fitness
 end
 """
 	ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
 """
 function ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
-	return ExpiringFitness(L, H, α, zeros(Float64, L))
+	return ExpiringFitness(L, H, α, Dirac(s))
 end
 
 Base.length(f::ExpiringFitness) = f.L
