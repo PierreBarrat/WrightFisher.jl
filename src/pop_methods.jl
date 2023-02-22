@@ -102,10 +102,12 @@ Apply `s(t+1) -= α*s(t)*f` for fitness at all positions.
 """
 function update_fitness!(pop::Pop{ExpiringFitness})
 	N = size(pop)
+	αN = pop.fitness.α/N
 	for (id, x) in pairs(pop.genotypes)
+		X = pop.counts[id]
 		for (i, (s, h)) in enumerate(zip(x.seq, pop.fitness.H))
-			if h != 0 && sign(h) == sign(s)
-				pop.fitness.H[i] -= pop.fitness.α * pop.fitness.H[i] * pop.counts[id]/N
+			if h != 0 && ((h > 0 && s > 0) || (h < 0 && s < 0)) #sign(h) == sign(s)
+				pop.fitness.H[i] -= αN * h * X
 			end
 		end
 	end

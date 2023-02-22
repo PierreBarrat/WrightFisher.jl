@@ -59,13 +59,13 @@ mutable struct AdditiveFitness <: FitnessLandscape
 # Fields
 ```
 L::Int
-H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
+H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
 s::Float64 # overall magnitude
 ```
 """
 Base.@kwdef mutable struct AdditiveFitness <: FitnessLandscape
 	L::Int
-	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
+	H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
 end
 """
 	AdditiveFitness(s::Number, L::Int)
@@ -85,14 +85,14 @@ mutable struct ExpiringFitness <: FitnessLandscape
 # Fields
 ```
 L::Int
-H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
+H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
 integrated_freq::Vector{Float64} # Summed frequency of the state favored by H
 α::Float64 # rate of decay of fitness
 ```
 """
 Base.@kwdef mutable struct ExpiringFitness <: FitnessLandscape
 	L::Int
-	H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
+	H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
 	α::Float64 # decay rate of fitness advantage
 	s::Distribution # values to sample from when re-initializing fitness
 end
@@ -114,15 +114,15 @@ mutable struct Pairwise <: FitnessLandscape
 # Fields
 ```
 L::Int
-H::Vector{Float32} # H[i] > 0 --> 1 is favored at position i
-J::Matrix{Float32}
+H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
+J::Matrix{Float64}
 s::Float64 # overall magnitude
 ```
 """
 Base.@kwdef mutable struct PairwiseFitness <: FitnessLandscape
 	L::Int
-	H::Vector{Float32}
-	J::Matrix{Float32}
+	H::Vector{Float64}
+	J::Matrix{Float64}
 	function PairwiseFitness(L, H, J)
 		@assert issymmetric(J) "Coupling matrix must be symmetric."
 		@assert sum(i->J[i,i], 1:L) == 0 "Coupling matrix must have null diagonal."
