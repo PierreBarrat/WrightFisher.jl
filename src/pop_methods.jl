@@ -198,7 +198,7 @@ function change_random_field!(
 	else
 		i = rand(epitopes[idx])
 		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
-		pop.fitness.H[i] = -σ * rand(pop.fitness.s)
+		pop.fitness.H[i] = -σ * sign(pop.fitness.H[i]) * rand(pop.fitness.s)
 		return i, pop.fitness.H[i]
 	end
 end
