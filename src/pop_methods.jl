@@ -152,6 +152,8 @@ end
 		epitopes = 1:pop.param.L,
 		max_freq = 0.5,
 		distribution = nothing,
+		set_to_finite_freq = true,
+		f0 = 0.02,
 	)
 
 Try to change a field in `pop.fitness`.
@@ -164,12 +166,16 @@ epitope positions matched the conditions, return `(nothing, nothing)`.
   This selects non-variable positions. No effect if `max_freq=0.5`.
 - `distribution`: distribution of the fitness effects. If `nothing`, only the sign of the \
 	field is changed. Should have support over positive numbers only.
+- `set_to_finite_freq`: immediatly set new advantageous mutation to frequency `f0`. Useful
+    when mutation rate is 0.
 """
 function change_random_field!(
 	pop::Pop;
 	epitopes = 1:pop.param.L,
 	max_freq = 0.5,
 	distribution = nothing,
+	set_to_finite_freq = true,
+	f0 = 0.02,
 )
 	f = f1(pop)
 	idx = findall(i->f[2*(i-1)+1] * (1-f[2*(i-1)+1]) < max_freq*(1-max_freq), epitopes)
@@ -179,10 +185,24 @@ function change_random_field!(
 		i = rand(epitopes[idx])
 		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
 		if isnothing(distribution)
-			pop.fitness.H[i] = -σ * pop.fitness.H[i]
+			pop.fitness.H[i] = -σ * abs(pop.fitness.H[i])
 		else
-			pop.fitness.H[i] = -σ * rand(distribution)
+			pop.fitness.H[i] = -σ * abs(rand(distribution))
 		end
+
+		# the code below introduces the new fit mutation at a frequency f0 in the population
+		if set_to_finite_freq
+			m = false
+			while !m
+				x = sample(pop, 1, format=:genotype)[1]
+				if x.seq[i] == σ
+					m = true
+					y = mutate_position(x, i)
+					push!(pop, y, round(Int, f0*size(pop)))
+				end
+			end
+		end
+
 		return i, pop.fitness.H[i]
 	end
 end
@@ -190,6 +210,8 @@ function change_random_field!(
 	pop::Pop{ExpiringFitness};
 	epitopes = 1:pop.param.L,
 	max_freq = 0.5,
+	set_to_finite_freq = true,
+	f0 = 0.02,
 )
 	f = f1(pop)
 	idx = findall(i->f[2*(i-1)+1] * (1-f[2*(i-1)+1]) < max_freq*(1-max_freq), epitopes)
@@ -198,7 +220,21 @@ function change_random_field!(
 	else
 		i = rand(epitopes[idx])
 		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
-		pop.fitness.H[i] = -σ * sign(pop.fitness.H[i]) * rand(pop.fitness.s)
+		pop.fitness.H[i] = -σ * rand(pop.fitness.s)# * sign(pop.fitness.H[i])
+
+		# the code below introduces the new fit mutation at a frequency f0 in the population
+		if set_to_finite_freq
+			m = false
+			while !m
+				x = sample(pop, 1, format=:genotype)[1]
+				if x.seq[i] == σ
+					m = true
+					y = mutate_position(x, i)
+					push!(pop, y, round(Int, f0*size(pop)))
+				end
+			end
+		end
+
 		return i, pop.fitness.H[i]
 	end
 end
@@ -237,12 +273,18 @@ function sample(
 		return sample_qstate(pop, n; rng)
 	elseif format == :qstates
 		return Int.(-sample_qstate(pop, n; rng)/2 .+ 1.5)
+	elseif format == :genotype
+		ids = _sample_ids(pop, n, rng)
+		return [pop.genotypes[id] for id in ids]
+	else
+		@error "Unrecognized sample format"
 	end
 end
 
 function sample_qstate(pop::Pop, n::Int; rng = Xorshifts.Xoroshiro128Plus())
 	aln = zeros(Int8, n, pop.param.L)
 	ids = StatsBase.sample(
+		rng,
 		collect(keys(pop.counts)),
 		weights(collect(values(pop.counts))),
 		n
@@ -256,6 +298,7 @@ end
 function sample_onehot(pop::Pop, n::Int; rng = Xorshifts.Xoroshiro128Plus())
 	aln = zeros(Int8, n, 2*pop.param.L)
 	ids = StatsBase.sample(
+		rng,
 		collect(keys(pop.counts)),
 		weights(collect(values(pop.counts))),
 		n
@@ -265,6 +308,15 @@ function sample_onehot(pop::Pop, n::Int; rng = Xorshifts.Xoroshiro128Plus())
 	end
 
 	return aln
+end
+
+function _sample_ids(pop, n, rng = Xorshifts.Xoroshiro128Plus())
+	return StatsBase.sample(
+		rng,
+		collect(keys(pop.counts)),
+		weights(collect(values(pop.counts))),
+		n
+	)
 end
 
 

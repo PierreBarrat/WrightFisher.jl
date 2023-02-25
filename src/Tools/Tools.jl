@@ -1,10 +1,82 @@
 module Tools
 
 using WrightFisher
+
+using Chain
+using Distributions
 using StatsBase
 
 export evolve_sample_freqs, evolve_sample_freqs!, evolve_sample_pop!
 
+function evolve_sample!(
+	pop, evtime, Δt, cb = NamedTuple();
+	switchgen = Inf, change_init_field = true, change_field_time = :random, kwargs...
+)
+
+	if haskey(cb, :t)
+		@warn "Key `:t` is reserved for time in argument `cb`. `cb[:t]` ignored."
+	end
+	cb_vals = []
+	switch_times = []
+
+	sample_next_switch() = if change_field_time == :random
+		@chain switchgen Distributions.Exponential rand round(Int, _) Int
+	elseif change_field_time == :periodic
+		Int(round(Int, switchgen))
+	end
+
+	nh = 0 # Number of changed fields
+	if switchgen < Inf && change_init_field
+		pos, h = WF.change_random_field!(pop; kwargs...)
+		nh += !isnothing(pos)
+		push!(switch_times, (t=0, pos=pos, h=h))
+	end
+
+	t = 0
+	push!(cb_vals, run_callbacks(pop, t, cb))
+
+	next_switch = sample_next_switch()
+	next_cb = Δt
+	while t <= evtime
+		event, τ = let
+			τ, event = findmin((switch=next_switch, cb=next_cb))
+			if event == :switch
+				next_switch = sample_next_switch()
+				next_cb -= τ
+			elseif event == :cb
+				next_switch -= τ
+				next_cb = Δt
+			end
+			event, τ
+		end
+
+		@debug "Next (event, time)" (event, τ)
+
+		WF.evolve!(pop, τ)
+		t += τ
+
+		if event == :cb
+			push!(cb_vals, run_callbacks(pop, t, cb))
+		elseif event == :switch
+			pos, h = WF.change_random_field!(pop; kwargs...)
+			nh += !isnothing(pos)
+			push!(switch_times, (t=t, pos=pos, h=h))
+		end
+	end
+
+	return cb_vals, switch_times
+
+end
+
+
+function run_callbacks(pop::Pop, t, cb)
+	names = (:t, Iterators.filter(!=(:t), keys(cb))...)
+	values = (
+		t,
+		(@chain cb pairs Iterators.filter(p -> p[1] != :t, _) map(p -> p[2](pop), _))...
+	)
+	return NamedTuple{names}(values)
+end
 
 """
 	evolve_sample_freqs(

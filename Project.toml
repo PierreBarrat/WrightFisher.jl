@@ -4,6 +4,7 @@ authors = ["PierreBarrat <p.barrat@live.fr>"]
 version = "0.1.0"
 
 [deps]
+Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"
 Dictionaries = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

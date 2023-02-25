@@ -1,5 +1,6 @@
 module WrightFisher
 
+using Chain
 using Dictionaries
 using Distributions
 using LinearAlgebra
