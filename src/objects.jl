@@ -87,21 +87,24 @@ mutable struct ExpiringFitness <: FitnessLandscape
 L::Int
 H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
 α::Float64 # decay rate of fitness advantage
-s::Distribution # values to sample from when re-initializing fitness
+# s::Distribution # values to sample from when re-initializing fitness
 ```
 """
 Base.@kwdef mutable struct ExpiringFitness <: FitnessLandscape
 	L::Int
 	H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
 	α::Float64 # decay rate of fitness advantage
-	s::Distribution # values to sample from when re-initializing fitness
+	# s::Distribution # values to sample from when re-initializing fitness
+
+	# ExpiringFitness(L, H, α, s::Number) = new(L, H, α, Dirac(s))
 end
-"""
-	ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
-"""
-function ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
-	return ExpiringFitness(L, H, α, Dirac(s))
-end
+
+# """
+# 	ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
+# """
+# function ExpiringFitness(s::Number, α::Number, L::Int, H=s*ones(L))
+# 	return ExpiringFitness(L, H, α, Dirac(s))
+# end
 
 Base.length(f::ExpiringFitness) = f.L
 

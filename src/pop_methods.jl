@@ -164,21 +164,29 @@ epitope positions matched the conditions, return `(nothing, nothing)`.
 - `epitopes`: positions where the fields can be changed
 - `max_freq`: a field at position `i` is only changed if `f_i(1-f_i) < max_freq(1-max_freq)`.
   This selects non-variable positions. No effect if `max_freq=0.5`.
-- `distribution`: distribution of the fitness effects. If `nothing`, only the sign of the \
-	field is changed. Should have support over positive numbers only.
+- `distribution`: distribution of the fitness effects.
+	If `nothing`, only the sign of the field is changed.
+	If `::Number`, uses a constant value for new fitness effects.
+	Should have support over positive numbers only.
 - `set_to_finite_freq`: immediatly set new advantageous mutation to frequency `f0`. Useful
     when mutation rate is 0.
 """
+function change_random_field!(pop::Pop; distribution = nothing, kwargs...)
+	change_random_field!(pop, distribution; kwargs...)
+end
+function change_random_field!(pop::Pop, distribution::Number; kwargs...)
+	change_random_field!(pop, Dirac(distribution); kwargs...)
+end
+
 function change_random_field!(
-	pop::Pop;
+	pop::Pop, distribution;
 	epitopes = 1:pop.param.L,
 	max_freq = 0.5,
-	distribution = nothing,
 	set_to_finite_freq = true,
 	f0 = 0.02,
 )
 	f = f1(pop)
-	idx = findall(i->f[2*(i-1)+1] * (1-f[2*(i-1)+1]) < max_freq*(1-max_freq), epitopes)
+	idx = findall(i -> f[2*(i-1)+1] * (1-f[2*(i-1)+1]) < max_freq*(1-max_freq), epitopes)
 	if isempty(idx)
 		return nothing, nothing
 	else
@@ -190,40 +198,8 @@ function change_random_field!(
 			pop.fitness.H[i] = -σ * abs(rand(distribution))
 		end
 
-		# the code below introduces the new fit mutation at a frequency f0 in the population
-		if set_to_finite_freq
-			m = false
-			while !m
-				x = sample(pop, 1, format=:genotype)[1]
-				if x.seq[i] == σ
-					m = true
-					y = mutate_position(x, i)
-					push!(pop, y, round(Int, f0*size(pop)))
-				end
-			end
-		end
-
-		return i, pop.fitness.H[i]
-	end
-end
-function change_random_field!(
-	pop::Pop{ExpiringFitness};
-	epitopes = 1:pop.param.L,
-	max_freq = 0.5,
-	set_to_finite_freq = true,
-	f0 = 0.02,
-)
-	f = f1(pop)
-	idx = findall(i->f[2*(i-1)+1] * (1-f[2*(i-1)+1]) < max_freq*(1-max_freq), epitopes)
-	if isempty(idx)
-		return nothing, nothing
-	else
-		i = rand(epitopes[idx])
-		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
-		pop.fitness.H[i] = -σ * rand(pop.fitness.s)# * sign(pop.fitness.H[i])
-
-		# the code below introduces the new fit mutation at a frequency f0 in the population
-		if set_to_finite_freq
+		# introduce the new fit mutation at a frequency f0 in the population
+		if set_to_finite_freq #&& f[2*(i-1)+1] * (1-f[2*(i-1)+1]) == 0
 			m = false
 			while !m
 				x = sample(pop, 1, format=:genotype)[1]
