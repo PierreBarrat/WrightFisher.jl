@@ -301,14 +301,29 @@ end
 ######################################################################
 
 """
-	diversity(pop; α=1, method=:renyi_entropy)
+	diversity(pop; method=:renyi_entropy, α=1, variable=0.05)
 
 Only `:renyi_entropy` method is implemented.
 
 ## Methods
 - `:renyi_entropy`: return the exponential of the Rényi entropy with parameter `α`.
+- `:variable_positions`: return the number of genome positions where the frequency of one
+  of the states is in the range `[variable, 1-variable]`.
 """
-function diversity(pop; α=1, method=:renyi_entropy)
+function diversity(pop; method=:renyi_entropy, α=1, variable=0.05)
+	return if method == :renyi_entropy
+		exp(renyi_entropy(pop, α))
+	elseif method == :variable_positions
+		f1 = frequencies(pop)
+		count(f1[1:2:end]) do f
+			variable < f < 1-variable
+		end
+	else
+		error("Unknown method $method.")
+	end
+end
+
+function renyi_entropy(pop::Pop, α)
 	P = collect(pop.counts) / sum(pop.counts)
-	return exp(StatsBase.renyientropy(P, α))
+	return StatsBase.renyientropy(P, α)
 end
