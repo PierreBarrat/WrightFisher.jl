@@ -8,9 +8,46 @@ using StatsBase
 
 export evolve_sample_freqs, evolve_sample_freqs!, evolve_sample_pop!
 
+"""
+	evolve_sample!(
+		pop, evtime, Δt, cb = NamedTuple();
+		switchgen = Inf, change_init_field = true, change_field_time = :random, kwargs...
+	)
+
+Evolve `pop` while calling callback functions in the named tuple `cb` every `Δt` steps.
+Fields in the fitness landscape of `pop` are changed at rate `1/switchgen`. Return
+the results of the callback values and the times at which the fitness landscape was changed.
+
+More specifically:
+- every `Δt`, for all `(name, f)` in `cb`, store `(name => f(pop))` in a named tuple `cb_vals`;
+- at rate `1/switchgen`, change a field in the fitness landscape of `pop` by calling
+  `WF.change_random_field!(pop; kwargs...)`; store the corresponding time in an array `switch_times`;
+- in between these events, evolve `pop` by calling `WF.evolve!`.
+
+Return `(cb_vals, switch_times)`.
+
+*Note*: to not change the fitness landscape, use `switchgen=Inf` (default).
+
+## Kwargs
+
+- `change_init_field`: if `true`, a field is changed at time `0` in the simulation.
+- `change_field_time`: if `:random`, uses an exponentially distributed waiting time
+ `switchgen`; if `:periodic`, change exactly every `switchgen`.
+
+Extra keyword arguments are passed to `WF.change_random_field!`.
+
+## Example
+
+
+
+"""
 function evolve_sample!(
 	pop, evtime, Δt, cb = NamedTuple();
-	switchgen = Inf, change_init_field = true, change_field_time = :random, kwargs...
+	fitness_distribution = nothing,
+	switchgen = Inf,
+	change_init_field = true,
+	change_field_time = :random,
+	kwargs...
 )
 
 	if haskey(cb, :t)
@@ -27,7 +64,7 @@ function evolve_sample!(
 
 	nh = 0 # Number of changed fields
 	if switchgen < Inf && change_init_field
-		pos, h = WF.change_random_field!(pop; kwargs...)
+		pos, h = WF.change_random_field!(pop, fitness_distribution; kwargs...)
 		nh += !isnothing(pos)
 		push!(switch_times, (t=0, pos=pos, h=h))
 	end
@@ -58,12 +95,11 @@ function evolve_sample!(
 		if event == :cb
 			push!(cb_vals, run_callbacks(pop, t, cb))
 		elseif event == :switch
-			pos, h = WF.change_random_field!(pop; kwargs...)
+			pos, h = WF.change_random_field!(pop, fitness_distribution; kwargs...)
 			nh += !isnothing(pos)
 			push!(switch_times, (t=t, pos=pos, h=h))
 		end
 	end
-
 	return cb_vals, switch_times
 
 end
