@@ -181,12 +181,12 @@ end
 function change_random_field!(
 	pop::Pop, distribution;
 	epitopes = 1:pop.param.L,
-	max_freq = 0.5,
+	max_freq = 0.0,
 	set_to_finite_freq = true,
 	f0 = 0.02,
 )
 	f = f1(pop)
-	idx = findall(i -> f[2*(i-1)+1] * (1-f[2*(i-1)+1]) < max_freq*(1-max_freq), epitopes)
+	idx = findall(i -> f[2*(i-1)+1] * (1-f[2*(i-1)+1]) <= max_freq*(1-max_freq), epitopes)
 	if isempty(idx)
 		return nothing, nothing
 	else
