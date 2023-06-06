@@ -8,6 +8,16 @@ function mutate(x::Genotype, nmut)
 	return Genotype(s, hash(s))
 end
 
+function mutate(x::Genotype, nmut, mut_weights)
+    s = copy(x.seq)
+    for i in sample(1:length(x), mut_weights, nmut)
+        i = rand(1:length(x))
+        s[i] = -s[i]
+    end
+
+    return Genotype(s, hash(s))
+end
+
 
 function mutate_position(x::Genotype, i::Int)
 	s = copy(x.seq)
@@ -17,7 +27,8 @@ end
 
 function mutate!(pop::Pop)
 	# Expected number of double mutants: 1/2*L^2*μ^2*N
-	λ = pop.param.N * pop.param.μ * pop.param.L
+	λ = pop.param.N * sum(pop.param.μ)
+
 	Z = if λ < 250
 		mutate_low!(pop)
 	else
@@ -27,17 +38,28 @@ function mutate!(pop::Pop)
 end
 
 function mutate_low!(pop)
-	λ = pop.param.N * pop.param.μ * pop.param.L
+	λ = pop.param.N * sum(pop.param.μ)
 	ids = collect(keys(pop.genotypes))
 
 	# Get position and id of genotype of mutations
 	Nmuts = pois_rand(λ)
-	pos = sort!(rand(1:(pop.param.N*pop.param.L), Nmuts); rev=true)
-	muts = map(pos) do x
-		i = mod(x-1, pop.param.L) + 1 # need a number in [1,L]
-		id_nb = Int((x - i)/pop.param.L)
-		(id_nb, i)
-	end
+    # 1
+    muts = Vector{Tuple{Int, Int}}(undef, Nmuts)
+    w = weights(pop.param.μ)
+    for m in 1:Nmuts
+        id = rand(1:pop.param.N) - 1 # id of the genotype (Int)
+        i = sample(1:pop.param.L, w)
+        muts[m] = (id, i)
+    end
+    sort!(muts; rev=true)
+    # 2
+    # pos = sort!(rand(1:(pop.param.N*pop.param.L), Nmuts); rev=true)
+    # muts = map(pos) do x
+    #     i = mod(x-1, pop.param.L) + 1 # need a number in [1,L]
+    #     id_nb = Int((x - i)/pop.param.L)
+    #     (id_nb, i)
+    # end
+
 	if isempty(muts)
 		return muts
 	end
@@ -72,7 +94,8 @@ function mutate_low!(pop)
 	return Nmuts
 end
 function mutate_high!(pop::Pop)
-	λ = pop.param.μ * pop.param.L
+	λ = sum(pop.param.μ) # average number of mutations in the sequence
+    w = weights(pop.param.μ) # weights to pick mutation position from
 	Z = 0
 	ids = collect(keys(pop.genotypes))
 	for id in ids
@@ -83,7 +106,7 @@ function mutate_high!(pop::Pop)
 		for i in 1:C
 			nm = pois_rand(λ)
 			if nm > 0
-				y = mutate(x, nm)
+				y = mutate(x, nm, w)
 				z += 1
 				push!(pop, y)
 			end
