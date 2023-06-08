@@ -337,5 +337,5 @@ end
 
 function polymorphism(pop::Pop, positions)
     freq = frequencies(pop)
-    return 2 * mean(x->x*(1-x), freq[positions[1:2:end]])
+    return 2 * mean(i -> freq[2*i-1]*freq[2*i], positions)
 end
