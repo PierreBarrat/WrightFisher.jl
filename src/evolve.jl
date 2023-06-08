@@ -164,6 +164,8 @@ function sample!(pop::Pop; method = :free)
 		return sample_poisson!(pop)
 	elseif method == :multinomial
 		return sample_multinomial!(pop)
+    else
+        error("Unrecognized sampling method $method. Choose from `:free, :poisson, :multinomial`")
 	end
 end
 

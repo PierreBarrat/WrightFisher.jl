@@ -19,7 +19,6 @@ begin
 	# T = 100
 
 	s = 0.05
-    H = s*ones(Float64, L)
 	α = -2*s/log(1-β)
 end
 
@@ -27,13 +26,13 @@ end
 
 out = let
 	fitness_landscape = WF.ExpiringFitness(; α, L, H)
-	pop = WF.Pop(fitness_landscape; N, L, μ)
+	pop = WF.Pop(fitness_landscape; N, L, μ, sampling_method)
 	out = WF.Tools.evolve_sample!(pop, 100, Δt, (div = WF.diversity,); switchgen = 1/ρ)
 end
 # compile run
 let
 	fitness_landscape = WF.ExpiringFitness(; α, L, H)
-	pop = WF.Pop(fitness_landscape; N, L, μ)
+	pop = WF.Pop(fitness_landscape; N, L, μ, sampling_method)
 	frequencies, _, _ = WF.Tools.evolve_sample_freqs!(pop, 100, Δt; switchgen = 1/ρ)
 end;
 
@@ -41,14 +40,14 @@ end;
 
 begin
 	fitness_landscape = WF.ExpiringFitness(; α, L, H)
-	pop = WF.Pop(fitness_landscape; N, L, μ)
+	pop = WF.Pop(fitness_landscape; N, L, μ, sampling_method)
 	Profile.clear()
 	@profile frequencies, _, _ = WF.Tools.evolve_sample_freqs!(pop, T, Δt; switchgen = 1/ρ)
 end;
 
 @btime let
 	fitness_landscape = WF.ExpiringFitness(; α, L, H)
-	pop = WF.Pop(fitness_landscape; N, L, μ)
+	pop = WF.Pop(fitness_landscape; N, L, μ, sampling_method)
 	frequencies, _, _ = WF.Tools.evolve_sample_freqs!(pop, T, Δt; switchgen = 1/ρ)
 end;
 
