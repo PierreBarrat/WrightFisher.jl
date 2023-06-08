@@ -56,7 +56,9 @@ function evolve_sample!(
 	cb_vals = []
 	switch_times = []
 
-	sample_next_switch() = if change_field_time == :random
+	sample_next_switch() = if !isfinite(switchgen)
+        Inf
+    elseif change_field_time == :random
 		@chain switchgen Distributions.Exponential rand round(Int, _) Int
 	elseif change_field_time == :periodic
 		Int(round(Int, switchgen))

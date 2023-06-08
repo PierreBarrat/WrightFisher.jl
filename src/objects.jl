@@ -60,7 +60,6 @@ mutable struct AdditiveFitness <: FitnessLandscape
 ```
 L::Int
 H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
-s::Float64 # overall magnitude
 ```
 """
 Base.@kwdef mutable struct AdditiveFitness <: FitnessLandscape

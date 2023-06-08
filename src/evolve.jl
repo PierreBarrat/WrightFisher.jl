@@ -125,7 +125,7 @@ function sample_poisson!(pop::Pop)
 		pop.counts[id] = pois_rand(cnt) # I should/could make this a multinomial
 	end
 	if sum(pop.counts) == 0
-		@warn "Sampled an empty population. For small populations, use multinomial sampling instead of Poisson."
+		@warn "Sampled an empty population. For small populations, use multinomial sampling instead of Poisson." length(pop) pop
 	end
 	delete_null_genotypes!(pop)
 	normalize!(pop)
@@ -191,7 +191,7 @@ function evolve!(pop::Pop{ExpiringFitness}, n=1)
 		select!(pop)
 		sample!(pop; method=pop.param.sampling_method)
 		@debug "Generation $i - Counts of genomes $(collect(pop.counts)) - Actual pop size $(size(pop))"
-		if length(pop) == 0
+		if length(pop) == 0 || sum(pop.counts) == 0
 			@warn "Empty population at generation $i: there was likely an issue somewhere."
 		end
 	end
