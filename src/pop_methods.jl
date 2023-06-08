@@ -149,7 +149,7 @@ end
 """
 	change_random_field!(
 		pop::Pop;
-		epitopes = 1:pop.param.L,
+		selected_positions = 1:pop.param.L,
 		max_freq = 0.5,
 		distribution = nothing,
 		set_to_finite_freq = true,
@@ -161,7 +161,7 @@ If a field was changed, return `(i, new_field)`. If no field was changed because
 epitope positions matched the conditions, return `(nothing, nothing)`.
 
 ## Arguments
-- `epitopes`: positions where the fields can be changed
+- `selected_positions`: positions where the fields can be changed
 - `max_freq`: a field at position `i` is only changed if `f_i(1-f_i) < max_freq(1-max_freq)`.
   This selects non-variable positions. No effect if `max_freq=0.5`.
 - `distribution`: distribution of the fitness effects.
@@ -180,39 +180,41 @@ end
 
 function change_random_field!(
 	pop::Pop, distribution;
-	epitopes = 1:pop.param.L,
+	selected_positions = 1:pop.param.L,
 	max_freq = 0.0,
 	set_to_finite_freq = true,
 	f0 = 0.02,
 )
 	f = f1(pop)
-	idx = findall(i -> f[2*(i-1)+1] * (1-f[2*(i-1)+1]) <= max_freq*(1-max_freq), epitopes)
-	if isempty(idx)
-		return nothing, nothing
-	else
-		i = rand(epitopes[idx])
-		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
-		if isnothing(distribution)
-			pop.fitness.H[i] = -σ * abs(pop.fitness.H[i])
-		else
-			pop.fitness.H[i] = -σ * abs(rand(distribution))
-		end
+	idx = findall(selected_positions) do i
+        f[2*(i-1)+1] * (1-f[2*(i-1)+1]) <= max_freq*(1-max_freq)
+    end
+	isempty(idx) && return (nothing, nothing)
 
-		# introduce the new fit mutation at a frequency f0 in the population
-		if set_to_finite_freq #&& f[2*(i-1)+1] * (1-f[2*(i-1)+1]) == 0
-			m = false
-			while !m
-				x = sample(pop, 1, format=:genotype)[1]
-				if x.seq[i] == σ
-					m = true
-					y = mutate_position(x, i)
-					push!(pop, y, round(Int, f0*size(pop)))
-				end
+
+	i = rand(selected_positions[idx])
+	σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
+	if isnothing(distribution)
+		pop.fitness.H[i] = -σ * abs(pop.fitness.H[i])
+	else
+		pop.fitness.H[i] = -σ * abs(rand(distribution))
+	end
+
+	# introduce the new fit mutation at a frequency f0 in the population
+	if set_to_finite_freq
+		m = false
+		while !m
+			x = sample(pop, 1, format=:genotype)[1]
+			if x.seq[i] == σ
+				m = true
+				y = mutate_position(x, i)
+				push!(pop, y, round(Int, f0*size(pop)))
 			end
 		end
-
-		return i, pop.fitness.H[i]
 	end
+
+	return i, pop.fitness.H[i]
+
 end
 
 ######################################################################
