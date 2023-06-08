@@ -303,7 +303,7 @@ end
 ######################################################################
 
 """
-	diversity(pop; method=:renyi_entropy, α=1, variable=0.05)
+	diversity(pop; method=:renyi_entropy, α=1, variable=0.05, positions = 1:pop.param.L)
 
 Only `:renyi_entropy` method is implemented.
 
@@ -311,10 +311,17 @@ Only `:renyi_entropy` method is implemented.
 - `:renyi_entropy`: return the exponential of the Rényi entropy with parameter `α`.
 - `:variable_positions`: return the number of genome positions where the frequency of one
   of the states is in the range `[variable, 1-variable]`.
+- `:polymorphism`: average of `2x(1-x)` where `x` is the frequency of one of the states,
+  over the set of sites `positions` (kwarg).
 """
-function diversity(pop; method=:renyi_entropy, α=1, variable=0.05)
+function diversity(
+    pop;
+    method=:renyi_entropy, α=1, variable=0.05, positions = 1:pop.param.L
+)
 	return if method == :renyi_entropy
 		exp(renyi_entropy(pop, α))
+    elseif method == :polymorphism
+        polymorphism(pop, positions)
 	elseif method == :variable_positions
 		f1 = frequencies(pop)
 		count(f1[1:2:end]) do f
@@ -328,4 +335,9 @@ end
 function renyi_entropy(pop::Pop, α)
 	P = collect(pop.counts) / sum(pop.counts)
 	return StatsBase.renyientropy(P, α)
+end
+
+function polymorphism(pop::Pop, positions)
+    freq = frequencies(pop)
+    return 2 * mean(x->x*(1-x), freq[positions[1:2:end]])
 end
