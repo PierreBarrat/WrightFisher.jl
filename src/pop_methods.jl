@@ -187,21 +187,26 @@ function change_random_field!(
 )
 	f = f1(pop)
 	idx = findall(selected_positions) do i
-        f[2*(i-1)+1] * (1-f[2*(i-1)+1]) <= max_freq*(1-max_freq)
+        f[2*i-1] * (1-f[2*i-1]) <= max_freq*(1-max_freq)
     end
 	isempty(idx) && return (nothing, nothing)
 
 
 	i = rand(selected_positions[idx])
-	σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
+	σ = f[2*i-1] > f[2*i] ? 1 : -1 # Is 1 or -1 fixed?
 	if isnothing(distribution)
 		pop.fitness.H[i] = -σ * abs(pop.fitness.H[i])
 	else
 		pop.fitness.H[i] = -σ * abs(rand(distribution))
 	end
+    @debug "change_random_field!: new field value $(pop.fitness.H[i]) at position $i"
 
 	# introduce the new fit mutation at a frequency f0 in the population
 	if set_to_finite_freq
+        if (σ == 1 && f[2*i] > 0) || (σ == -1 && f[2*i-1] > 0)
+            f = σ == 1 ? f[2*i] : f[2*i-1] # frequency of the minority state
+            @warn "`set_to_finite_freq=true` but the state ($i, $σ) already exists at freq. $(f) -- skipping"
+        end
 		m = false
 		while !m
 			x = sample(pop, 1, format=:genotype)[1]
@@ -211,6 +216,7 @@ function change_random_field!(
 				push!(pop, y, round(Int, f0*size(pop)))
 			end
 		end
+        @debug "Set sweeping genome to freq $(f0). Counts: $(pop.counts |> collect)."
 	end
 
 	return i, pop.fitness.H[i]
