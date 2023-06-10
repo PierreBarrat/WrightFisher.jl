@@ -119,12 +119,20 @@ function mutate_high!(pop::Pop)
 end
 
 function select!(pop::Pop)
+    @debug "Selecting: fitness of genotypes $(map(g -> fitness(g, pop.fitness), pop.genotypes) |> collect)"
+    mean_fitness = 0
 	for (id, x) in pairs(pop.genotypes)
-		ϕ = fitness(x, pop.fitness)
+        ϕ = fitness(x, pop.fitness)
+        mean_fitness += ϕ
 		if ϕ != 0
-			pop.counts[id] *= exp(ϕ)
+			pop.counts[id] *= exp(ϕ) # - mean_fitness)
 		end
 	end
+    # rescale by mean fitness; avoid trouble with extremely low pop counts
+    mean_fitness /= length(pop.genotypes)
+    for (id, x) in pairs(pop.genotypes)
+        pop.counts[id] *= exp(-mean_fitness)
+    end
 
 	return nothing
 end
