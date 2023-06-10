@@ -25,14 +25,33 @@ function mutate_position(x::Genotype, i::Int)
 	return Genotype(s, hash(s))
 end
 
+function mutate_position_push!(pop, x::Genotype, i::Int)
+    s = x.seq
+    s[i] = -s[i]
+    new_id = hash(s)
+    return if haskey(pop.genotypes, new_id)
+        pop.counts[new_id] += 1
+        s[i] = -s[i]
+        pop.genotypes[new_id]
+    else
+        new_s = copy(s)
+        new_x = Genotype(new_s, new_id)
+        insert!(pop.genotypes, new_id, new_x)
+        insert!(pop.counts, new_id, 1)
+        s[i] = -s[i]
+        new_x
+    end
+end
+
 function mutate!(pop::Pop)
 	# Expected number of double mutants: 1/2*L^2*μ^2*N
 	λ = pop.param.N * sum(pop.param.μ)
 
-	Z = if λ < 250
+	Z = if 0 < λ < 1001
 		mutate_low!(pop)
-	else
-		mutate_high!(pop)
+	elseif λ >= 1001
+		mutate_low!(pop)
+        # error("FIX `mutate_high!`")
 	end
 	return Z
 end
@@ -44,21 +63,11 @@ function mutate_low!(pop)
 	# Get position and id of genotype of mutations
 	Nmuts = pois_rand(λ)
     # 1
-    muts = Vector{Tuple{Int, Int}}(undef, Nmuts)
     w = weights(pop.param.μ)
-    for m in 1:Nmuts
-        id = rand(1:pop.param.N) - 1 # id of the genotype (Int)
-        i = sample(1:pop.param.L, w)
-        muts[m] = (id, i)
-    end
+    clone_numbers = rand(1:pop.param.N, Nmuts)
+    positions = sample(1:pop.param.L, w, Nmuts)
+    muts = [(clone_number = id-1, pos = i) for (id, i) in zip(clone_numbers, positions)]
     sort!(muts; rev=true)
-    # 2
-    # pos = sort!(rand(1:(pop.param.N*pop.param.L), Nmuts); rev=true)
-    # muts = map(pos) do x
-    #     i = mod(x-1, pop.param.L) + 1 # need a number in [1,L]
-    #     id_nb = Int((x - i)/pop.param.L)
-    #     (id_nb, i)
-    # end
 
 	if isempty(muts)
 		return muts
@@ -73,6 +82,7 @@ function mutate_low!(pop)
 		end
 	end
 	# Iterate over clones until all mutations are introduced
+    #= !! I think this will never mutate the same genome twice !!  could lead to bugs=#
 	id_cursor = 0
 	for id in ids
 		C = Int(floor(pop.counts[id]))
@@ -80,8 +90,7 @@ function mutate_low!(pop)
 		while is_mut_position(id_cursor, C, muts)
 			# This clone must be mutated
 			id_nb, i = pop!(muts) # Retrieve mut info
-			y = WF.mutate_position(pop.genotypes[id], i)
-			push!(pop, y)
+            mutate_position_push!(pop, pop.genotypes[id], i)
 			z += 1
 		end
 		WF.remove!(pop, pop.genotypes[id], min(z, C)) # `min` to avoid rare issues with low pop clones
@@ -93,30 +102,32 @@ function mutate_low!(pop)
 
 	return Nmuts
 end
-function mutate_high!(pop::Pop)
-	λ = sum(pop.param.μ) # average number of mutations in the sequence
-    w = weights(pop.param.μ) # weights to pick mutation position from
-	Z = 0
-	ids = collect(keys(pop.genotypes))
-	for id in ids
-		x = pop.genotypes[id]
-		C = Int(floor(pop.counts[id]))
-		z = 0
-		i = 1
-		for i in 1:C
-			nm = pois_rand(λ)
-			if nm > 0
-				y = mutate(x, nm, w)
-				z += 1
-				push!(pop, y)
-			end
-		end
-		remove!(pop, x, z)
-		Z += z
-	end
 
-	return Z
-end
+#=BROKEN -- needs to be fixed=#
+# function mutate_high!(pop::Pop)
+# 	λ = sum(pop.param.μ) # average number of mutations in the sequence
+#     w = weights(pop.param.μ) # weights to pick mutation position from
+# 	Z = 0
+# 	ids = collect(keys(pop.genotypes))
+# 	for id in ids
+# 		x = pop.genotypes[id]
+# 		C = Int(floor(pop.counts[id]))
+# 		z = 0
+# 		i = 1
+# 		for i in 1:C
+# 			nm = pois_rand(λ)
+# 			if nm > 0
+# 				y = mutate(x, nm, w)
+# 				z += 1
+# 				push!(pop, y)
+# 			end
+# 		end
+# 		remove!(pop, x, z)
+# 		Z += z
+# 	end
+
+# 	return Z
+# end
 
 function select!(pop::Pop)
     @debug "Selecting: fitness of genotypes $(map(g -> fitness(g, pop.fitness), pop.genotypes) |> collect)"
