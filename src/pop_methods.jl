@@ -323,13 +323,18 @@ function diversity(
     elseif method == :polymorphism
         polymorphism(pop, positions)
 	elseif method == :variable_positions
-		f1 = frequencies(pop)
-		count(f1[1:2:end]) do f
-			variable < f < 1-variable
-		end
+        count_variable_positions(pop, variable, positions)
 	else
 		error("Unknown method $method.")
 	end
+end
+
+function count_variable_positions(pop, threshold, positions)
+    f1 = frequencies(pop)
+    return count(positions) do i
+        f = f1[2*i-1]
+        threshold < f < 1-threshold
+    end
 end
 
 function renyi_entropy(pop::Pop, α)
