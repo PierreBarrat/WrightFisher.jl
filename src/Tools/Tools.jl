@@ -33,6 +33,7 @@ Return `(cb_vals, switch_times)`.
 - `change_init_field`: if `true`, a field is changed at time `0` in the simulation.
 - `change_field_time`: if `:random`, uses an exponentially distributed waiting time
  `switchgen`; if `:periodic`, change exactly every `switchgen`.
+ - `burnin`: ignore the first generations (do not call callback)
 
 Extra keyword arguments are passed to `WF.change_random_field!`.
 
@@ -47,6 +48,7 @@ function evolve_sample!(
 	switchgen = Inf,
 	change_init_field = true,
 	change_field_time = :random,
+    burnin = 0,
 	kwargs...
 )
 
@@ -71,20 +73,25 @@ function evolve_sample!(
 		push!(switch_times, (t=0, pos=pos, h=h))
 	end
 
+    WF.evolve!(pop, burnin)
+
 	t = 0
-	push!(cb_vals, run_callbacks(pop, t, cb))
+	# burnin == 0 && push!(cb_vals, run_callbacks(pop, t, cb))
 
 	next_switch = sample_next_switch()
-	next_cb = Δt
-	while t <= evtime
+	next_cb = t > burnin ? Δt : burnin
+	while t < evtime
 		event, τ = let
-			τ, event = findmin((switch=next_switch, cb=next_cb))
+			τ, event = findmin((switch=next_switch, cb=next_cb, stop=evtime-t))
 			if event == :switch
 				next_switch = sample_next_switch()
 				next_cb -= τ
 			elseif event == :cb
 				next_switch -= τ
 				next_cb = Δt
+            elseif event == :stop
+                next_switch -= τ
+                next_cb -= τ
 			end
 			event, τ
 		end
