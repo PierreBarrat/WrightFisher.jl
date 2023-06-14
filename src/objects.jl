@@ -60,7 +60,6 @@ mutable struct AdditiveFitness <: FitnessLandscape
 ```
 L::Int
 H::Vector{Float64} # H[i] > 0 --> 1 is favored at position i
-s::Float64 # overall magnitude
 ```
 """
 Base.@kwdef mutable struct AdditiveFitness <: FitnessLandscape
@@ -179,9 +178,20 @@ end
 Base.@kwdef struct PopParam
 	N::Int # population size
 	L::Int # length of genomes
-	μ::Float64 # mutation rate (per gen per site)
-
+	μ::Vector{Float64} # mutation rate (per gen per site)
 	sampling_method::Symbol = :free
+
+    function PopParam(N::Int, L::Int, μ::Vector{Float64}, sampling_method)
+        if length(μ) != L
+            throw(DimensionMismatch("Length of mutation vector $(length(μ)) and sequences $L must match"))
+        end
+        return new(N, L, μ, sampling_method)
+    end
+end
+
+PopParam(N::Int, L::Int, μ::Number; kw...) = PopParam(;N, L, μ=μ*ones(Float64, L), kw...)
+function PopParam(N::Int, L::Int, μ::Number, s::Symbol)
+    return PopParam(; N, L, μ=μ*ones(Float64, L), sampling_method=s)
 end
 
 mutable struct Pop{F<:FitnessLandscape}
@@ -309,12 +319,14 @@ function remove!(pop::Pop, x::Genotype, i)
 	return pop
 end
 
-function size(pop::Pop)
+function Base.size(pop::Pop)
 	N = 0.
 	for cnt in pop.counts
 		N += cnt
 	end
 	return N
 end
+Base.length(pop::Pop) = length(pop.counts)
+
 
 

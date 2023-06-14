@@ -149,7 +149,7 @@ end
 """
 	change_random_field!(
 		pop::Pop;
-		epitopes = 1:pop.param.L,
+		selected_positions = 1:pop.param.L,
 		max_freq = 0.5,
 		distribution = nothing,
 		set_to_finite_freq = true,
@@ -161,7 +161,7 @@ If a field was changed, return `(i, new_field)`. If no field was changed because
 epitope positions matched the conditions, return `(nothing, nothing)`.
 
 ## Arguments
-- `epitopes`: positions where the fields can be changed
+- `selected_positions`: positions where the fields can be changed
 - `max_freq`: a field at position `i` is only changed if `f_i(1-f_i) < max_freq(1-max_freq)`.
   This selects non-variable positions. No effect if `max_freq=0.5`.
 - `distribution`: distribution of the fitness effects.
@@ -180,39 +180,47 @@ end
 
 function change_random_field!(
 	pop::Pop, distribution;
-	epitopes = 1:pop.param.L,
+	selected_positions = 1:pop.param.L,
 	max_freq = 0.0,
 	set_to_finite_freq = true,
 	f0 = 0.02,
 )
 	f = f1(pop)
-	idx = findall(i -> f[2*(i-1)+1] * (1-f[2*(i-1)+1]) <= max_freq*(1-max_freq), epitopes)
-	if isempty(idx)
-		return nothing, nothing
-	else
-		i = rand(epitopes[idx])
-		σ = f[2*(i-1)+1] > f[2*(i-1)+2] ? 1 : -1 # Is 1 or -1 fixed?
-		if isnothing(distribution)
-			pop.fitness.H[i] = -σ * abs(pop.fitness.H[i])
-		else
-			pop.fitness.H[i] = -σ * abs(rand(distribution))
-		end
+	idx = findall(selected_positions) do i
+        f[2*i-1] * (1-f[2*i-1]) <= max_freq*(1-max_freq)
+    end
+	isempty(idx) && return (nothing, nothing)
 
-		# introduce the new fit mutation at a frequency f0 in the population
-		if set_to_finite_freq #&& f[2*(i-1)+1] * (1-f[2*(i-1)+1]) == 0
-			m = false
-			while !m
-				x = sample(pop, 1, format=:genotype)[1]
-				if x.seq[i] == σ
-					m = true
-					y = mutate_position(x, i)
-					push!(pop, y, round(Int, f0*size(pop)))
-				end
+
+	i = rand(selected_positions[idx])
+	σ = f[2*i-1] > f[2*i] ? 1 : -1 # Is 1 or -1 fixed?
+	if isnothing(distribution)
+		pop.fitness.H[i] = -σ * abs(pop.fitness.H[i])
+	else
+		pop.fitness.H[i] = -σ * abs(rand(distribution))
+	end
+    @debug "change_random_field!: new field value $(pop.fitness.H[i]) at position $i"
+
+	# introduce the new fit mutation at a frequency f0 in the population
+	if set_to_finite_freq
+        if (σ == 1 && f[2*i] > 0) || (σ == -1 && f[2*i-1] > 0)
+            f = σ == 1 ? f[2*i] : f[2*i-1] # frequency of the minority state
+            @warn "`set_to_finite_freq=true` but the state ($i, $σ) already exists at freq. $(f) -- skipping"
+        end
+		m = false
+		while !m
+			x = sample(pop, 1, format=:genotype)[1]
+			if x.seq[i] == σ
+				m = true
+				y = mutate_position(x, i)
+				push!(pop, y, round(Int, f0*size(pop)))
 			end
 		end
-
-		return i, pop.fitness.H[i]
+        @debug "Set sweeping genome to freq $(f0). Counts: $(pop.counts |> collect)."
 	end
+
+	return i, pop.fitness.H[i]
+
 end
 
 ######################################################################
@@ -301,7 +309,7 @@ end
 ######################################################################
 
 """
-	diversity(pop; method=:renyi_entropy, α=1, variable=0.05)
+	diversity(pop; method=:renyi_entropy, α=1, variable=0.05, positions = 1:pop.param.L)
 
 Only `:renyi_entropy` method is implemented.
 
@@ -309,21 +317,38 @@ Only `:renyi_entropy` method is implemented.
 - `:renyi_entropy`: return the exponential of the Rényi entropy with parameter `α`.
 - `:variable_positions`: return the number of genome positions where the frequency of one
   of the states is in the range `[variable, 1-variable]`.
+- `:polymorphism`: average of `2x(1-x)` where `x` is the frequency of one of the states,
+  over the set of sites `positions` (kwarg).
 """
-function diversity(pop; method=:renyi_entropy, α=1, variable=0.05)
+function diversity(
+    pop;
+    method=:renyi_entropy, α=1, variable=0.05, positions = 1:pop.param.L
+)
 	return if method == :renyi_entropy
 		exp(renyi_entropy(pop, α))
+    elseif method == :polymorphism
+        polymorphism(pop, positions)
 	elseif method == :variable_positions
-		f1 = frequencies(pop)
-		count(f1[1:2:end]) do f
-			variable < f < 1-variable
-		end
+        count_variable_positions(pop, variable, positions)
 	else
 		error("Unknown method $method.")
 	end
 end
 
+function count_variable_positions(pop, threshold, positions)
+    f1 = frequencies(pop)
+    return count(positions) do i
+        f = f1[2*i-1]
+        threshold < f < 1-threshold
+    end
+end
+
 function renyi_entropy(pop::Pop, α)
 	P = collect(pop.counts) / sum(pop.counts)
 	return StatsBase.renyientropy(P, α)
+end
+
+function polymorphism(pop::Pop, positions)
+    freq = frequencies(pop)
+    return 2 * mean(i -> freq[2*i-1]*freq[2*i], positions)
 end

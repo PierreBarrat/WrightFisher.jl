@@ -27,7 +27,6 @@ include("fitness.jl")
 include("evolve.jl")
 include("pop_methods.jl")
 include("misc.jl")
-include("diversity.jl")
 
 include("Tools/Tools.jl")
 

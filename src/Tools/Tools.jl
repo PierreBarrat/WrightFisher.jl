@@ -9,10 +9,15 @@ using StatsBase
 export evolve_sample_freqs, evolve_sample_freqs!, evolve_sample_pop!
 
 """
-	evolve_sample!(
-		pop, evtime, Δt, cb = NamedTuple();
-		switchgen = Inf, change_init_field = true, change_field_time = :random, kwargs...
-	)
+    evolve_sample!(
+        pop, evtime, Δt, cb = NamedTuple();
+        fitness_distribution = nothing,
+        switchgen = Inf,
+        change_init_field = true,
+        change_field_time = :random,
+        burnin = 0,
+        kwargs...
+    )
 
 Evolve `pop` while calling callback functions in the named tuple `cb` every `Δt` steps.
 Fields in the fitness landscape of `pop` are changed at rate `1/switchgen`. Return
@@ -33,6 +38,7 @@ Return `(cb_vals, switch_times)`.
 - `change_init_field`: if `true`, a field is changed at time `0` in the simulation.
 - `change_field_time`: if `:random`, uses an exponentially distributed waiting time
  `switchgen`; if `:periodic`, change exactly every `switchgen`.
+ - `burnin`: ignore the first generations (do not call callback)
 
 Extra keyword arguments are passed to `WF.change_random_field!`.
 
@@ -47,6 +53,7 @@ function evolve_sample!(
 	switchgen = Inf,
 	change_init_field = true,
 	change_field_time = :random,
+    burnin = 0,
 	kwargs...
 )
 
@@ -56,7 +63,9 @@ function evolve_sample!(
 	cb_vals = []
 	switch_times = []
 
-	sample_next_switch() = if change_field_time == :random
+	sample_next_switch() = if !isfinite(switchgen)
+        Inf
+    elseif change_field_time == :random
 		@chain switchgen Distributions.Exponential rand round(Int, _) Int
 	elseif change_field_time == :periodic
 		Int(round(Int, switchgen))
@@ -69,20 +78,25 @@ function evolve_sample!(
 		push!(switch_times, (t=0, pos=pos, h=h))
 	end
 
+    WF.evolve!(pop, burnin)
+
 	t = 0
-	push!(cb_vals, run_callbacks(pop, t, cb))
+	# burnin == 0 && push!(cb_vals, run_callbacks(pop, t, cb))
 
 	next_switch = sample_next_switch()
-	next_cb = Δt
-	while t <= evtime
+	next_cb = t > burnin ? Δt : burnin
+	while t < evtime
 		event, τ = let
-			τ, event = findmin((switch=next_switch, cb=next_cb))
+			τ, event = findmin((switch=next_switch, cb=next_cb, stop=evtime-t))
 			if event == :switch
 				next_switch = sample_next_switch()
 				next_cb -= τ
 			elseif event == :cb
 				next_switch -= τ
 				next_cb = Δt
+            elseif event == :stop
+                next_switch -= τ
+                next_cb -= τ
 			end
 			event, τ
 		end
