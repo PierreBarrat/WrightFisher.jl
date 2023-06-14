@@ -9,10 +9,15 @@ using StatsBase
 export evolve_sample_freqs, evolve_sample_freqs!, evolve_sample_pop!
 
 """
-	evolve_sample!(
-		pop, evtime, Δt, cb = NamedTuple();
-		switchgen = Inf, change_init_field = true, change_field_time = :random, kwargs...
-	)
+    evolve_sample!(
+        pop, evtime, Δt, cb = NamedTuple();
+        fitness_distribution = nothing,
+        switchgen = Inf,
+        change_init_field = true,
+        change_field_time = :random,
+        burnin = 0,
+        kwargs...
+    )
 
 Evolve `pop` while calling callback functions in the named tuple `cb` every `Δt` steps.
 Fields in the fitness landscape of `pop` are changed at rate `1/switchgen`. Return
