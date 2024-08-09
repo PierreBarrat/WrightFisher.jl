@@ -150,7 +150,7 @@ end
 	change_random_field!(
 		pop::Pop;
 		selected_positions = 1:pop.param.L,
-		max_freq = 0.5,
+		max_freq = 0.0,
 		distribution = nothing,
 		set_to_finite_freq = true,
 		f0 = 0.02,
