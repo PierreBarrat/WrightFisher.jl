@@ -130,7 +130,6 @@ end
 # end
 
 function select!(pop::Pop)
-    @debug "Selecting: fitness of genotypes $(map(g -> fitness(g, pop.fitness), pop.genotypes) |> collect)"
     mean_fitness = 0
 	for (id, x) in pairs(pop.genotypes)
         ϕ = fitness(x, pop.fitness)
@@ -149,7 +148,6 @@ function select!(pop::Pop)
 end
 
 function sample_multinomial!(pop::Pop)
-	@debug "Sampling with multinomial method. Counts before: $(collect(pop.counts))"
 	p = collect(pop.counts) / size(pop)
 	new_counts = rand(Multinomial(Int(pop.N), p))
 	for (i, (id, cnt)) in enumerate(pairs(pop.counts))
@@ -157,16 +155,13 @@ function sample_multinomial!(pop::Pop)
 	end
 
 	delete_null_genotypes!(pop)
-	@debug "Sampling with multinomial method. Counts after: $(collect(pop.counts))"
 
 	return pop
 end
 function sample_poisson!(pop::Pop)
-	@debug "Sampling with poisson method. Counts before: $(collect(pop.counts))"
 	for (id, cnt) in pairs(pop.counts)
 		pop.counts[id] = pois_rand(cnt) # I should/could make this a multinomial
 	end
-	@debug "Sampling with poisson method. Counts after (not normalized): $(collect(pop.counts))"
 	if sum(pop.counts) == 0
 		@warn "Sampled an empty population. For small populations, use multinomial sampling instead of Poisson." length(pop)
 	end
@@ -220,7 +215,6 @@ function evolve!(pop::Pop, n=1)
 		mutate!(pop)
 		select!(pop)
 		sample!(pop; method=pop.param.sampling_method)
-		@debug "Generation $i - Counts of genomes $(collect(pop.counts)) - Actual pop size $(sum(pop.counts))"
 		if length(pop) == 0 || sum(pop.counts) == 0
 			@warn "Empty population at generation $i: there was likely an issue somewhere."
 		end
@@ -234,7 +228,6 @@ function evolve!(pop::Pop{ExpiringFitness}, n=1)
 		update_fitness!(pop)
 		select!(pop)
 		sample!(pop; method=pop.param.sampling_method)
-		@debug "Generation $i - Counts of genomes $(collect(pop.counts)) - Actual pop size $(size(pop))"
 		if length(pop) == 0 || sum(pop.counts) == 0
 			@warn "Empty population at generation $i: there was likely an issue somewhere."
 		end

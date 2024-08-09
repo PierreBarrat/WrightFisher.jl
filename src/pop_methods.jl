@@ -189,7 +189,10 @@ function change_random_field!(
 	idx = findall(selected_positions) do i
         f[2*i-1] * (1-f[2*i-1]) <= max_freq*(1-max_freq)
     end
-	isempty(idx) && return (nothing, nothing)
+	if isempty(idx)
+        @warn "All positions in pop are variable (`max_freq`=$(max_freq)). No field flip."
+        return (nothing, nothing)
+    end
 
 
 	i = rand(selected_positions[idx])
