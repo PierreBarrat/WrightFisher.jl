@@ -206,20 +206,21 @@ function change_random_field!(
 
 	# introduce the new fit mutation at a frequency f0 in the population
 	if set_to_finite_freq
-        if (σ == 1 && f[2*i] > 0) || (σ == -1 && f[2*i-1] > 0)
+        if (σ == 1 && f[2*i] > f0) || (σ == -1 && f[2*i-1] > f0)
             f = σ == 1 ? f[2*i] : f[2*i-1] # frequency of the minority state
             @warn "`set_to_finite_freq=true` but the state ($i, $σ) already exists at freq. $(f) -- skipping"
+        else
+    		m = false
+    		while !m
+    			x = sample(pop, 1, format=:genotype)[1]
+    			if x.seq[i] == σ
+    				m = true
+    				y = mutate_position(x, i)
+    				push!(pop, y, round(Int, f0*size(pop)))
+    			end
+    		end
+            @debug "Set sweeping genome to freq $(f0). Counts: $(pop.counts |> collect)."
         end
-		m = false
-		while !m
-			x = sample(pop, 1, format=:genotype)[1]
-			if x.seq[i] == σ
-				m = true
-				y = mutate_position(x, i)
-				push!(pop, y, round(Int, f0*size(pop)))
-			end
-		end
-        @debug "Set sweeping genome to freq $(f0). Counts: $(pop.counts |> collect)."
 	end
 
 	return i, pop.fitness.H[i]
